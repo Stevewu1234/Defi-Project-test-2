@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import "../node_modules/@openzeppelin/contracts/proxy/Initializable.sol";
+import "../../node_modules/@openzeppelin/contracts/proxy/Initializable.sol";
 
 contract TEST is Initializable {
 
