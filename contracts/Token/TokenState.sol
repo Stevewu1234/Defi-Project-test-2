@@ -1,6 +1,6 @@
 pragma solidity ^0.6.0;
 
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 /** This contract refer to Synthetix's TokenState Contract. But  */
 contract TokenState is Ownable {
