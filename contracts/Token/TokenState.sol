@@ -1,8 +1,8 @@
 pragma solidity ^0.6.0;
 
-import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
-/** This contract refer to Synthetix's TokenState Contract. But  */
+/** This contract refer to Synthetix's TokenState Contract. */
 contract TokenState is Ownable {
     mapping(address => uint) public balanceOf;
     mapping(addrss => mapping(address => uint)) public allowance;
@@ -14,7 +14,7 @@ contract TokenState is Ownable {
         emit AssociatedContractUpdated(_associatedContract);
     }
 
-    /** ========== external function ========== */
+    /** ========== mutative function ========== */
 
     /**
      * @notice Set ERC20 allowance.
@@ -49,6 +49,7 @@ contract TokenState is Ownable {
     }
 
     /** ========== modifier ========== */
+    
     modifier OnlyAssociatedContract {
         require(msg.sender == associatedContract, "Only the associated contract can perform this action");
         _;

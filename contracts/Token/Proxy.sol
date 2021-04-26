@@ -2,7 +2,7 @@
 
 pragma solidity >=0.6.0 <0.8.0;
 
-import "../../node_modules/@openzeppelin/contracts/UpgradeableProxy.sol";
+import "../node_modules/@openzeppelin/contracts/UpgradeableProxy.sol";
 
 /**
  * @dev This contract implements a proxy that is upgradeable by an admin.
