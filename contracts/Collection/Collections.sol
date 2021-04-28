@@ -18,15 +18,17 @@ contract NFT_test is ERC721,Ownable {
         setBaseURI(_baseUri);
     }
 
-    /** ===================== mutative function ===================== */
+    /** ===================== external mutative function ===================== */
 
     function mint(address to) external {
         _singlemint(to);
+        emit singlemint(to, _tokenIdTracker.current());
     }
 
     function batchmint(address to, uint amount) external {
         _batchmint(to,amount);
-    }
+        emit batchmint(to, amount);
+    } 
 
     function changeBaseURI(string memory baseURI_) external {
         _setBaseURI(baseURL_);
@@ -48,7 +50,7 @@ contract NFT_test is ERC721,Ownable {
         transferOwnership(owner);
     }
 
-    /** ===================== internal function ===================== */
+    /** ===================== internal mutative function ===================== */
 
     function _batchmint(address to,uint amount) internal {
         require(amount != 0, "you must set a amount");
@@ -66,7 +68,8 @@ contract NFT_test is ERC721,Ownable {
     /** ===================== view ===================== */
 
     /** ===================== event ===================== */ 
-    
+    event singlemint(address to, uint tokenid);
+    event batchmint(address to, uint amount);
     
 
     
