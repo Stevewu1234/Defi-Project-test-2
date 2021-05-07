@@ -7,16 +7,19 @@ import "./Interface/IRouter.sol";
 // Libraries
 
 // Internal References
-import "../Interface/IAddressResovler.sol";
-import "../Interface/ITokenState.sol";
-import "../Interface/IVoteRecord.sol";
-import "../Interface/IMerkleDistribution.sol";
-import "../Interface/ILiquidityReward_Token_ETH.sol";
-import "../SystemController/ISystemStatus.sol";
+import "./Interface/IAddressResovler.sol";
+import "./Interface/ITokenState.sol";
+import "./Interface/IVoteRecord.sol";
+import "./Interface/IMerkleDistribution.sol";
+import "./Interface/ILiquidityReward_Token_ETH.sol";
+import "./SystemController/ISystemStatus.sol";
+import "./Token/Token.sol";
+import "./Interface/IUniswapV2Pair.sol"
 
 contract SystemRouter is IRouter, Ownable {
 
     /* ========== Address Resolver configuration ==========*/
+    bytes32 private constant CONTRACT_TOKEN = "Token";
     bytes32 private constant CONTRACT_RESOLVER = "Resolver";
     bytes32 private constant CONTRACT_TOKENSTATE = "TokenState";
     bytes32 private constant CONTRACT_VOTERECORD = "VoteRecord";
@@ -28,12 +31,17 @@ contract SystemRouter is IRouter, Ownable {
 
 
     function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {
-        addresses[0] = CONTRACT_RESOLVER;
-        addresses[1] = CONTRACT_TOKENSTATE;
-        addresses[2] = CONTRACT_VOTERECORD;
-        addresses[3] = CONTRACT_SYSTEMSTATUS;
-        addresses[4] = CONTRACT_MERKLEDISTRIBUTION;
-        addresses[5] = CONTRACT_LIQUDITY_STAKING_TOKEN_ETH;
+        addresses[0] = CONTRACT_TOKEN;
+        addresses[1] = CONTRACT_RESOLVER;
+        addresses[2] = CONTRACT_TOKENSTATE;
+        addresses[3] = CONTRACT_VOTERECORD;
+        addresses[4] = CONTRACT_SYSTEMSTATUS;
+        addresses[5] = CONTRACT_MERKLEDISTRIBUTION;
+        addresses[6] = CONTRACT_LIQUDITY_STAKING_TOKEN_ETH;
+    }
+
+    function token() internal view returns (IToken) {
+        return IToken(requireAndGetAddress(CONTRACT_TOKEN));
     }
 
     function resolver() internal view returns (IVoteRecord) {
@@ -63,7 +71,7 @@ contract SystemRouter is IRouter, Ownable {
 
     /** ========== public mutative functions ========== */
 
-    function comeforfun(address from, uint amount) public {
+    function comeforfun(address to, uint rewardAmount) public {
 
     }
 
@@ -80,6 +88,20 @@ contract SystemRouter is IRouter, Ownable {
 
     function stake(uint256 amount) external {
         liqudityStaking_token_eth().stake(amount);
+    }
+
+    function stakewithpermit(
+        address stakingtoken,
+        uint256 expiry, 
+        uint _amount,
+        bool approveMax, 
+        uint8 v, 
+        bytes32 r, 
+        bytes32 s 
+    ) public {
+        uint value = approveMax ? uint(-1) : _amount;
+        IUniswapV2Pair(stakingtoken).permit(msg.sender, address(this), value, deadline, v, r, s);
+        liqudityStaking_token_eth().stake(value);
     }
 
     function withdraw(uint256 amount) external {
