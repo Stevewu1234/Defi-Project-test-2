@@ -1,4 +1,5 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "../Interface/ISystemStatus.sol";
@@ -50,8 +51,9 @@ contract SystemStatus is Ownable {
     bytes32 public constant SECTION_STABLECOIN = "StableCoin";
     bytes32 public constant SECTION_DAO = "DAO";
 
-    // string public constant TokenMint = "tokenmint";
-    // string public constant TokenBurn = "tokenburn";
+    string public constant TOKENMINT = "tokenmint";
+    string public constant TOKENBURN = "tokenburn";
+    string public constant VEST = "Vest";
     
     // constructor () {}
 
