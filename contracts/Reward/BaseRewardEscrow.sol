@@ -6,16 +6,16 @@ import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "../Tools/CacheResolver.sol";
 
 // Libraries
-import "..";
+import "../Tools/zeppelin/SafeMath.sol";
 
 // Internal References
 import "../Interface/IRewardToken.sol";
 import "../Interface/ISystemStatus.sol";
 import "../Interface/IRewardState.sol";
-import "../Tools/zeppelin/IERC20";
+import "../Tools/zeppelin/IERC20.sol";
 
 contract BaseRewardEscrow is Ownable,CacheResolver {
-    // using SafeMath for uint;
+    using SafeMath for uint;
 
     /* ========== Address Resolver configuration ==========*/
     bytes32 private constant CONTRACT_REWARDTOKEN = "RewardToken"; 
@@ -41,29 +41,51 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
     }
 
     /** variables */
+
+    /** Escrow Related Variables */ 
+
+    // detail of an escrow event
     struct accountEscrowed {
         uint escrowedEndTime;
         uint escrowedAmount;
     }
+    // an account's escrowed token recording
+    mapping (address => mapping(uint => accountEscrowed)) public accountEscrowedEvent;
 
+    // an account's escrow event entries
+    mapping (address => uint256[]) public accountEscrowedEntries;
+
+    // an account's total Escrowed token amount
+    mapping(address => uint256) public accountTotalEscrowedBalance;
+
+    // total Escrowedtoken in this Escrow Contract
+    uint public totalEscrowedBalance;
+
+    // num of all escrow events in this Escrow Contract and it can be used to generate the next escrow event of an account
+    uint public nextEntry;
+
+    /** Vest Related Variables */ 
+
+    // detail of an vest event
     struct accountVested {
         uint vestedAcquiredTime;
         uint totalVestedAmount;
     }
 
-    mapping (address => mapping(uint => accountEscrowed)) public accountEscrowedEvent;
-
-    mapping(address => uint256) public accountTotalEscrowedBalance;
-
+    // an account's total vested token amount
     mapping(address => accountVested) public accountTotalVestedBalance;
 
-    uint public totalEscrowedBalance;
 
+    // duration
     uint public max_escrowduration;
 
     uint public min_escrowduration;
 
-    uint public currentEntry;
+    //todo the max_escrowduration and min_escrowduration can be defined in RewardState.
+
+    constructor (address _resolver) CacheResolver(_resolver) {
+        nextEntry = 1;
+    }
 
 
     /** ========== public view functions ========== */
@@ -87,10 +109,18 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
 
     /** ========== external mutative functions ========== */
 
+    /**
+     * @description: user can check all of the escrowed token he has and claim all of them once
+     * @param receiver who receive escrowed token and the owner of escrowed token can authorize another user to claim
+     * @return {*}
+     */    
     function vest(address receiver, uint[] memory entryIDs) external vestActive {
+
+        // todo judge the receiver is the owner of these entried or not and get the authorization or not.
+
         uint256 total;
         for (uint i = 0; i < entryIDs.length; i++) {
-            accountEscrowed storage entry = accountEscrowed[receiver][entryIDs[i]];
+            accountEscrowed storage entry = accountEscrowedEvent[receiver][entryIDs[i]];
 
             /* Skip entry if escrowAmount == 0 already vested */
             if (entry.escrowedAmount != 0) {
@@ -110,6 +140,12 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
         }
     }
 
+    /**
+     * @description: the function call will be limited by another contract of this system for restricting users add escrow entries at their will.
+     * @param account the account to append a new escrow entry
+     * @param amount escrowed amount 
+     * @param duration user can customize the duration but need to accord with min duration and max duration
+     */    
     function appendEscrowEntry(address account, uint amount, uint duration) external {
         _appendEscrowEntry(account, amount, duration);
 
@@ -125,7 +161,7 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
     /** ========== external view functions ========== */
     
     function accountEscrowednum(address account)  external view returns(uint num) {
-        return num = accountEscrowedEntryIds[account].length;
+        return num = accountEscrowedEntries[account].length;
     }
 
     /** ========== internal mutative functions ========== */
@@ -144,16 +180,21 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
         _addAccountEscrowedBalance(account, _amount);
 
         uint EndTime = block.timestamp + duration;
-        uint entryID = currentEntry;
+        uint entryID = nextEntry;
 
         accountEscrowedEvent[account][entryID] = accountEscrowed({escrowedEndTime: EndTime, escrowedAmount:_amount});
+        accountEscrowedEntries[account].push(entryID);
 
-        currentEntry++;
+        nextEntry = nextEntry.add(1);
 
         emit appendEscrowEntry(account, _amount, duration);
         
     }
 
+    //todo add a internal function to calculate the locked reward of token, the longer they lock, the more they get. 
+    //     and the function call is not from this contract, it will call a reward contract to modify some variables to calculate the reward.
+    //     but this reward calculation will be confused becase all of the confirmed reward have been lock in this contract. If there is a new reward
+    //     from this lock duration that will need to create a new escrow event. That will generate new confusion.
 
 
     function _addAccountEscrowedBalance(address account, uint _amount) internal {
@@ -190,6 +231,8 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
         systemStatue().requireFunctionActive(systemStatue().VEST, systemStatue().SECTION_REWARDPOOL);
     }
 
+    //todo add a modifier to limit the function call of appendEscrowEntry must from a pointed contract
+    //todo add a modifier to limit the function call of vest must from authorized user or the owner
  
     /** ========== event ========== */
     event vest(address indexed receiver, uint indexed amount);
