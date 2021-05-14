@@ -1,11 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// Inheritance
 import "../Tools/CacheResolver.sol";
+
+// Internal References
+import "../Interface/IToken.sol"
 
 contract JoinInState is CacheResolver{
 
-    uint public players;
+
+
+    uint public playerAmount;
     
     struct playerAttendanceDate {
         uint attendIndex;
@@ -18,10 +24,11 @@ contract JoinInState is CacheResolver{
 
     mapping (address => playerAttendanceDate) public playerAttendance;
 
+    mapping (address => )
 
-    constructor () {
 
-    }
+
+
     /** ========== public mutative functions ========== */
     
 
@@ -34,7 +41,9 @@ contract JoinInState is CacheResolver{
     /** ========== external mutative functions ========== */
 
 
+
     /** ========== external view functions ========== */
+
 
 
     /** ========== internal mutative functions ========== */
@@ -43,6 +52,10 @@ contract JoinInState is CacheResolver{
 
     /** ========== internal view functions ========== */
     function _percapitashareof() internal {}
+
+    function _getAttendRate(address account) internal {
+        
+    }
 
     /** ========== private mutative functions ========== */
 
