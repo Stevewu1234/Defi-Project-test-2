@@ -2,11 +2,11 @@
 pragma solidity ^0.8.0;
 
 // Inheritance
-import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../Tools/zeppelin/Ownable.sol";
 import "../Tools/CacheResolver.sol";
 
 // Libraries
-import "../Tools/zeppelin/SafeMath.sol";
+import "../Libraries/SafeMath.sol";
 
 // Internal References
 import "../Interface/IRewardToken.sol";
@@ -61,19 +61,23 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
     // total Escrowedtoken in this Escrow Contract
     uint public totalEscrowedBalance;
 
+    // users are not allowed to escrow too much which may encounter unbounded iteration over release
+    uint public max_escrowNumber;
+
     // num of all escrow events in this Escrow Contract and it can be used to generate the next escrow event of an account
     uint public nextEntry;
 
     /** Vest Related Variables */ 
 
     // detail of an vest event
-    struct accountVested {
-        uint vestedAcquiredTime;
-        uint totalVestedAmount;
+    struct accountReleased {
+        uint releasedAcquiredTime;
+        uint totalReleasedAmount;
     }
 
-    // an account's total vested token amount
-    mapping(address => accountVested) public accountTotalVestedBalance;
+    // an account's total Released token amount
+    mapping(address => accountReleased) public accountTotalReleasedBalance;
+
 
 
     // duration
@@ -83,8 +87,9 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
 
     //todo the max_escrowduration and min_escrowduration can be defined in RewardState.
 
-    constructor (address _resolver) CacheResolver(_resolver) {
+    constructor (address _resolver, uint _max_escrowNumber) CacheResolver(_resolver) {
         nextEntry = 1;
+        max_escrowNumber = _max_escrowNumber;
     }
 
 
@@ -97,32 +102,54 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
         return escrowedEntry.escrowedAmount;
     }
 
-    function accountVestedAcquiredTime(address account) public view returns (uint) {
-        return accountVested.acquiredTime;
+    function accountReleasedAcquiredTime(address account) public view returns (uint) {
+        return accountReleased.acquiredTime;
     }
 
-    function accountVestedTotalVestedAmount(address account) public view returns (uint) {
-        return accountVested.totalVestedAmount;
+    function accountReleasedTotalReleasedAmount(address account) public view returns (uint) {
+        return accountReleased.totalReleasedAmount;
     }
 
 
 
     /** ========== external mutative functions ========== */
 
-    /**
-     * @description: user can check all of the escrowed token he has and claim all of them once
-     * @param receiver who receive escrowed token and the owner of escrowed token can authorize another user to claim
-     * @return {*}
-     */    
-    function vest(address receiver, uint[] memory entryIDs) external vestActive {
+    // /**
+    //  * @description: user can check all of the escrowed token he has and claim all of them once
+    //  * @param receiver who receive escrowed token and the owner of escrowed token can authorize another user to claim
+    //  * @return {*}
+    //  */    
+    // function vest(address receiver, uint[] memory entryIDs) external vestActive {
 
-        // todo judge the receiver is the owner of these entried or not and get the authorization or not.
+    //     // todo judge the receiver is the owner of these entried or not and get the authorization or not.
 
-        uint256 total;
-        for (uint i = 0; i < entryIDs.length; i++) {
-            accountEscrowed storage entry = accountEscrowedEvent[receiver][entryIDs[i]];
+    //     uint256 total;
+    //     for (uint i = 0; i < entryIDs.length; i++) {
+    //         accountEscrowed storage entry = accountEscrowedEvent[receiver][entryIDs[i]];
 
-            /* Skip entry if escrowAmount == 0 already vested */
+    //         /* Skip entry if escrowAmount == 0 already vested */
+    //         if (entry.escrowedAmount != 0) {
+    //             uint256 amount = _claimableAmount(entry);
+
+    //             /* update entry to remove escrowAmount */
+    //             if (amount > 0) {
+    //                 entry.escrowedAmount = 0;
+    //             }
+
+    //             /* add quantity to total */
+    //             total = total.add(amount);
+    //         }
+    //     }
+    //     if(total != 0) {
+    //         _vest(receiver, amount);
+    //     }
+    // }
+
+    function release(address receiver) external vestActive {
+        for (uint i = 0; i < accountEscrowednum(); i++) {
+            accountEscrowed storage entry = accountEscrowedEvent[receiver][accountEscrowedEntries[account][i]];
+
+            /* Skip entry if escrowAmount == 0 already released */
             if (entry.escrowedAmount != 0) {
                 uint256 amount = _claimableAmount(entry);
 
@@ -135,8 +162,8 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
                 total = total.add(amount);
             }
         }
-        if(total != 0) {
-            _vest(receiver, amount);
+            if(total != 0) {
+            _release(receiver, amount);
         }
     }
 
@@ -160,22 +187,30 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
 
     /** ========== external view functions ========== */
     
-    function accountEscrowednum(address account)  external view returns(uint num) {
+    function accountEscrowednum(address account) external view returns(uint num) {
         return num = accountEscrowedEntries[account].length;
+    }
+
+    function escrowedTokenBalanceOf(address account) external view returns(uint amount) {
+        return accountTotalEscrowedBalance[account];
     }
 
     /** ========== internal mutative functions ========== */
 
-    function _vest(address receiver, uint _amount) internal {
-        require(_amount <= IERC20(address(RewardToken())).balanceOf(address(this)), "there are not enough token to vest");
+    function _release(address receiver, uint _amount) internal {
+        require(_amount <= IERC20(address(RewardToken())).balanceOf(address(this)), "there are not enough token to release");
         _reduceAccountEscrowedBalance(receiver, amount);
-        _updateAccountVestedEntry(receiver, amount);
+        _updateAccountReleasedEntry(receiver, amount);
         IERC20(address(RewardToken())).transfer(receiver, _amount);
-        emit vest(receiver, _amount);
+        emit released(receiver, _amount);
     }
+
+    //todo user can choose to vest their token which is not staked into the contract or vest those have been staked into contract. 
+    //     if the vesting token have been staked into contract that maybe I need to provide a new function that vest and stake the token immediately.
 
     function _appendEscrowEntry(address account, uint _amount, uint duration) internal {
         require(duration >= min_escrowduration && duration <= max_escrowduration, "you must set the duration between allowed duration");
+        require(accountEscrowednum() <= max_escrowNumber, "you have escrowed too much, we suggest you wait for your first escrowed token released");
 
         _addAccountEscrowedBalance(account, _amount);
 
@@ -207,9 +242,9 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
         accountTotalEscrowedBalance[account] = accountTotalEscrowedBalance[account].sub(_amount);
     }
 
-    function _updateAccountVestedEntry(address account, uint amount) internal {
-        accountTotalVestedBalance[receiver].vestedAcquiredTime = block.timestamp;
-        accountTotalVestedBalance[receiver].totalVestedAmount = accountTotalVestedBalance[receiver].add(_amount);
+    function _updateAccountReleasedEntry(address account, uint amount) internal {
+        accountTotalReleasedBalance[receiver].releasedAcquiredTime = block.timestamp;
+        accountTotalReleasedBalance[receiver].totalReleasededAmount = accountTotalReleasedBalance[receiver].add(_amount);
     }
 
     /** ========== internal view functions ========== */
@@ -226,16 +261,16 @@ contract BaseRewardEscrow is Ownable,CacheResolver {
 
     /** ========== modifier ========== */
 
-    modifier vestActive {
+    modifier releaseActive {
         systemStatue().requireSystemActive();
-        systemStatue().requireFunctionActive(systemStatue().VEST, systemStatue().SECTION_REWARDPOOL);
+        systemStatue().requireFunctionActive(systemStatue().RELEASE, systemStatue().SECTION_REWARDPOOL);
     }
 
     //todo add a modifier to limit the function call of appendEscrowEntry must from a pointed contract
     //todo add a modifier to limit the function call of vest must from authorized user or the owner
  
     /** ========== event ========== */
-    event vest(address indexed receiver, uint indexed amount);
+    event released(address indexed receiver, uint indexed amount);
     event appendEscrowEntry(address indexed account, uint indexed amount, uint indexed duration);
 
 }
