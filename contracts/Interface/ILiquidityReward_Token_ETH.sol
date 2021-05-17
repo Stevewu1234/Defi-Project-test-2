@@ -1,4 +1,4 @@
-interface ILiqudityStaking_Token_ETH {
+interface ILiqudityReward_Token_ETH {
 
     function stake(uint256 amount) external;
 
