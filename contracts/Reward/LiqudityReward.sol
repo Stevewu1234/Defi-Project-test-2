@@ -1,4 +1,4 @@
-/** This contract' code is referring to Synthetix but readjusted the structure and added new function*/
+/** This contract is referring to Synthetix but added new functions*/
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
@@ -9,10 +9,12 @@ import "../interface/LPTokenWrapper.sol";
 
 // Internal References
 import "../Libraries/Math.sol";
+import "../Interface/ILiquidityPool.sol";
 
 contract LiqudityReward is LPTokenWrapper, IRewardDistributionRecipient {
 
     IERC20 public rewardtoken;      // token contract address
+    ILiquidityPool public liquiditypool;  // record account and total reward
 
     uint256 public constant DURATION = 14 days;
 
@@ -20,16 +22,19 @@ contract LiqudityReward is LPTokenWrapper, IRewardDistributionRecipient {
     uint256 public rewardRate = 0;
     uint256 public lastUpdateTime;
     uint256 public rewardPerTokenStored;
-    uint256 public starttime = ;  //starttime 2020/10/11 12:00am
+    uint256 public starttime = 1621321196;  //starttime 2021/05/18 15:00am
+
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
     constructor (
         address _staketoken,
-        address _rewardtoken
+        address _rewardtoken,
+        address _liquiditypool
     )  {
         staketoken = IERC20(_staketoken);
         rewardtoken = IERC20(_rewardtoken);
+        liquiditypool = ILiquidity(_liquiditypool);
     }
 
 
@@ -58,6 +63,7 @@ contract LiqudityReward is LPTokenWrapper, IRewardDistributionRecipient {
         if (reward > 0) {
             rewards[msg.sender] = 0;
             rewardtoken.safeTransfer(msg.sender, reward);
+            updateEarnings(msg.sender, reward);
             emit RewardPaid(msg.sender, reward);
         }
     }
