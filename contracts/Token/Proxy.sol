@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity >=0.6.0 <0.8.0;
+pragma solidity ^0.8.0;
 
-import "../node_modules/@openzeppelin/contracts/UpgradeableProxy.sol";
+import "../../node_modules/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @dev This contract implements a proxy that is upgradeable by an admin.
@@ -25,33 +25,21 @@ import "../node_modules/@openzeppelin/contracts/UpgradeableProxy.sol";
  * Our recommendation is for the dedicated account to be an instance of the {ProxyAdmin} contract. If set up this way,
  * you should think of the `ProxyAdmin` instance as the real administrative interface of your proxy.
  */
-contract ProxyTest is UpgradeableProxy {
+contract proxy_test is ERC1967Proxy {
     /**
      * @dev Initializes an upgradeable proxy managed by `_admin`, backed by the implementation at `_logic`, and
-     * optionally initialized with `_data` as explained in {UpgradeableProxy-constructor}.
+     * optionally initialized with `_data` as explained in {ERC1967Proxy-constructor}.
      */
-    constructor(address _logic, address admin_, bytes memory _data) public payable UpgradeableProxy(_logic, _data) {
+    constructor(address _logic, address admin_, bytes memory _data) payable ERC1967Proxy(_logic, _data) {
         assert(_ADMIN_SLOT == bytes32(uint256(keccak256("eip1967.proxy.admin")) - 1));
-        _setAdmin(admin_);
+        _changeAdmin(admin_);
     }
-
-    /**
-     * @dev Emitted when the admin account has changed.
-     */
-    event AdminChanged(address previousAdmin, address newAdmin);
-
-    /**
-     * @dev Storage slot with the admin of the contract.
-     * This is the keccak-256 hash of "eip1967.proxy.admin" subtracted by 1, and is
-     * validated in the constructor.
-     */
-    bytes32 private constant _ADMIN_SLOT = 0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103;
 
     /**
      * @dev Modifier used internally that will delegate the call to the implementation unless the sender is the admin.
      */
     modifier ifAdmin() {
-        if (msg.sender == _admin()) {
+        if (msg.sender == _getAdmin()) {
             _;
         } else {
             _fallback();
@@ -68,7 +56,7 @@ contract ProxyTest is UpgradeableProxy {
      * `0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103`
      */
     function admin() external ifAdmin returns (address admin_) {
-        admin_ = _admin();
+        admin_ = _getAdmin();
     }
 
     /**
@@ -91,10 +79,8 @@ contract ProxyTest is UpgradeableProxy {
      *
      * NOTE: Only the admin can call this function. See {ProxyAdmin-changeProxyAdmin}.
      */
-    function changeAdmin(address newAdmin) external ifAdmin {
-        require(newAdmin != address(0), "ProxyTest: new admin is the zero address");
-        emit AdminChanged(_admin(), newAdmin);
-        _setAdmin(newAdmin);
+    function changeAdmin(address newAdmin) external virtual ifAdmin {
+        _changeAdmin(newAdmin);
     }
 
     /**
@@ -103,7 +89,7 @@ contract ProxyTest is UpgradeableProxy {
      * NOTE: Only the admin can call this function. See {ProxyAdmin-upgrade}.
      */
     function upgradeTo(address newImplementation) external ifAdmin {
-        _upgradeTo(newImplementation);
+        _upgradeToAndCall(newImplementation, bytes(""), false);
     }
 
     /**
@@ -114,38 +100,21 @@ contract ProxyTest is UpgradeableProxy {
      * NOTE: Only the admin can call this function. See {ProxyAdmin-upgradeAndCall}.
      */
     function upgradeToAndCall(address newImplementation, bytes calldata data) external payable ifAdmin {
-        _upgradeTo(newImplementation);
-        Address.functionDelegateCall(newImplementation, data);
+        _upgradeToAndCall(newImplementation, data, true);
     }
 
     /**
      * @dev Returns the current admin.
      */
-    function _admin() internal view returns (address adm) {
-        bytes32 slot = _ADMIN_SLOT;
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            adm := sload(slot)
-        }
-    }
-
-    /**
-     * @dev Stores a new address in the EIP1967 admin slot.
-     */
-    function _setAdmin(address newAdmin) private {
-        bytes32 slot = _ADMIN_SLOT;
-
-        // solhint-disable-next-line no-inline-assembly
-        assembly {
-            sstore(slot, newAdmin)
-        }
+    function _admin() internal view virtual returns (address) {
+        return _getAdmin();
     }
 
     /**
      * @dev Makes sure the admin cannot access the fallback function. See {Proxy-_beforeFallback}.
      */
     function _beforeFallback() internal virtual override {
-        require(msg.sender != _admin(), "ProxyTest: admin cannot fallback to proxy target");
+        require(msg.sender != _getAdmin(), "TransparentUpgradeableProxy: admin cannot fallback to proxy target");
         super._beforeFallback();
     }
 }

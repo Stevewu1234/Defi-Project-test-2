@@ -1,20 +1,41 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+// Inheritance
+import "../../node_modules/@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../Tools/CacheResolver.sol";
+
+
+// Internal References
+import "../Interface/IToken.sol";
+
 
 /** This contract refer to Synthetix's TokenState Contract. */
-contract TokenState is Ownable {
+contract TokenState is OwnableUpgradeable, CacheResolver {
     mapping(address => uint) public balanceOf;
-    mapping(addrss => mapping(address => uint)) public allowance;
-    address public associatedContract;
+    mapping(address => mapping(address => uint)) public allowance;
 
-    constructor(address _associatedContract) public {
-        require(_associatedContract != address(0), "you must set the associated Contract");
-        associatedContract = _associatedContract;
-        emit AssociatedContractUpdated(_associatedContract);
+
+    /* ========== Address Resolver configuration ==========*/
+    bytes32 private constant CONTRACT_TOKEN = "Token";
+
+    function tokenstate_init(address _resolver) external initializer {
+        _cacheInit(_resolver);
+        __Ownable_init();
     }
 
-    /** ========== mutative function ========== */
+    function resolverAddressesRequired() public view override returns (bytes32[] memory) {
+        bytes32[] memory addresses = new bytes32[](1);
+        addresses[0] = CONTRACT_TOKEN;
+        return addresses;
+    }
+
+    function token() internal view returns (IToken) {
+        return IToken(requireAndGetAddress(CONTRACT_TOKEN));
+    }
+
+
+    /** ========== external mutative function ========== */
 
     /**
      * @notice Set ERC20 allowance.
@@ -28,7 +49,7 @@ contract TokenState is Ownable {
         address tokenOwner,
         address spender,
         uint value
-    ) external onlyAssociatedContract {
+    ) external OnlyInternalContract {
         allowance[tokenOwner][spender] = value;
     }
 
@@ -38,20 +59,21 @@ contract TokenState is Ownable {
      * @param account The account whose value to set.
      * @param value The new balance of the given account.
      */
-    function setBalanceOf(address account, uint value) external onlyAssociatedContract {
+    function setBalanceOf(address account, uint value) external OnlyInternalContract {
         balanceOf[account] = value;
     }
 
     // Change the associated contract to a new address
-    function setAssociatedContract(address _associatedContract) external onlyOwner {
-        associatedContract = _associatedContract;
-        emit AssociatedContractUpdated(_associatedContract);
-    }
+
+
+
 
     /** ========== modifier ========== */
     
-    modifier OnlyAssociatedContract {
-        require(msg.sender == associatedContract, "Only the associated contract can perform this action");
+    modifier OnlyInternalContract {
+        bool isToken = msg.sender == address(token());
+        
+        require(isToken, "Only Internal Contracts");
         _;
     }
 
