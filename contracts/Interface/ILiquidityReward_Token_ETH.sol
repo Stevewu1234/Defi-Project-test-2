@@ -1,10 +1,18 @@
-interface ILiqudityReward_Token_ETH {
+interface ILiquidityReward_Token_ETH {
 
-    function stake(uint256 amount) external;
+    function stake(address account, uint256 amount) external;
 
-    function withdraw(uint256 amount) external;
+    function withdraw(address account,uint256 amount) external;
 
-    function getReward() external;
+    function getReward(address account) external;
 
-    function exit() external;
+    function exit(address account) external;
+
+    function balanceOf(address account) external view returns (uint);
+
+    function totalSupply() external view returns (uint);
+
+    function earned(address account) external view returns (uint);
+
+    function balanceOfStakeToken(address account) external view returns (uint);
 }
