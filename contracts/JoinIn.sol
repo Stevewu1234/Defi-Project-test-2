@@ -9,7 +9,7 @@ import "./Tools/CacheResolver.sol";
 import "./Libraries/SafeMath.sol";
 
 // Internal References
-import "./Interface/IStakeToken.sol";
+import "./Interface/IToken.sol";
 import "./Interface/ISystemStatus.sol";
 import "./Interface/IRewardState.sol";
 import "./Interface/IJoinInState.sol";
@@ -34,8 +34,8 @@ contract JoinIn is Ownable,CacheResolver {
         addresses[4] = CONTRACT_REWARDESCROW;
     }
 
-    function stakeToken() internal view returns (IStakeToken) {
-        return IStakeToken(requireAndGetAddress(CONTRACT_STAKETOKEN));
+    function stakeToken() internal view returns (IToken) {
+        return IToken(requireAndGetAddress(CONTRACT_STAKETOKEN));
     }
     function systemStatue() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
