@@ -7,7 +7,7 @@ import "../Tools/CacheResolver.sol";
 // Internal References
 import "../Interface/IToken.sol"
 
-contract JoinInState is CacheResolver{
+contract PortalState is CacheResolver{
 
 
 
