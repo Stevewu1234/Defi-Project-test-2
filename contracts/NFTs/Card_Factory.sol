@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
-import "./DragonCard.sol";
+import "./Card.sol";
 
-contract DragonCard_Factory is Ownable{
+contract Card_Factory is Ownable{
 
     struct belong {
         address generator_,
@@ -35,13 +35,13 @@ contract DragonCard_Factory is Ownable{
         string memory _baseuri,
         bytes32 _category
     ) external onlyGenerator returns (address) {
-        DragonCard DragonCardAddress = new DragonCard(_name,_symbol,_baseuri);
-        belongto[address(DragonCardAddress)].generator_ = _msgSender();
-        belongto[address(DragonCardAddress)].category_ = _category;
-        categories[_category].push(DragonCardAddress);
+        Card CardAddress = new Card(_name,_symbol,_baseuri);
+        belongto[address(CardAddress)].generator_ = _msgSender();
+        belongto[address(CardAddress)].category_ = _category;
+        categories[_category].push(CardAddress);
 
-        emit created(DragonCardAddress, _msgSender(), _category);
-        return DragonCardAddress;
+        emit created(CardAddress, _msgSender(), _category);
+        return CardAddress;
     }
 
     /** =================== external mutative function onlyGenerator =================== */
