@@ -3,7 +3,7 @@ pragma solidity ^0.8.0;
 
 import "../../node_modules/@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
 
-contract DragonCard is ERC721PresetMinterPauserAutoId {
+contract Card is ERC721PresetMinterPauserAutoId {
     
 
     constructor (
