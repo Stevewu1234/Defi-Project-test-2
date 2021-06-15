@@ -8,6 +8,7 @@ import "./ExternStateToken.sol";
 // Internal references
 import "../Interface/IVoteRecord.sol";
 import "../Interface/ISystemStatus.sol";
+import "../Interface/IPortalState.sol";
 
 
 contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
@@ -15,13 +16,15 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
     /* ========== Address Resolver configuration ==========*/
     bytes32 private constant CONTRACT_VOTERECORD = "VoteRecord";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
+    bytes32 private constant CONTRACT_PORTALSTATE = "PortalState";
 
 
 
     function resolverAddressesRequired() public view override returns (bytes32[] memory ) {
-        bytes32[] memory addresses = new bytes32[](2);
+        bytes32[] memory addresses = new bytes32[](3);
         addresses[0] = CONTRACT_VOTERECORD;
         addresses[1] = CONTRACT_SYSTEMSTATUS;
+        addresses[2] = CONTRACT_PORTALSTATE;
         return addresses;
     }
 
@@ -33,6 +36,10 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
 
     function systemStatus() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
+    }
+
+    function portalState() internal view returns (IPortalState) {
+        return IPortalState(requireAndGetAddress(CONTRACT_PORTALSTATE));
     }
 
 
@@ -71,13 +78,14 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
     /** ========== public mutative functions ========== */
 
     function transfer(address recipient, uint256 amount) public systemActive returns (bool)  {
+        _canTransfer(amount);
         _transfer(_msgSender(), recipient, amount);
         voteRecord().moveDelegates(_msgSender(), recipient, amount);
-        
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public systemActive returns (bool)  {
+        _canTransfer(amount);
         _transfer(sender, recipient, amount);
 
         uint256 currentAllowance = tokenState.allowance(sender, _msgSender());
@@ -94,12 +102,17 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
         _mint(to, value);
     }
 
-
-    
     function burn(address from, uint256 value) public systemActive burnfunctionActive {
         _burn(from, value);
         voteRecord().moveDelegates(from, address(0), value);
         
+    }
+
+    /** ========== internal mutative function ========== */
+    function _canTransfer(uint value) internal returns (bool) {
+        uint transferableAmount = portalState().getTransferableAmount(_msgSender(), value);
+        require(value <= transferableAmount, "can't transfer entered or escrowed");
+        return true;
     }
 
 
