@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 // Inheritance
 import "./Tools/CacheResolver.sol";
+import "../node_modules/@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // Internal References
 import "./Interface/IAddressResolver.sol";
@@ -20,10 +21,6 @@ contract SystemRouter is OwnableUpgradeable, CacheResolver{
     bytes32 private constant CONTRACT_MERKLEDISTRIBUTION = "MerkleDistribution";
     bytes32 private constant CONTRACT_LIQUIDITY_TOKEN_ETH = "LiquidityReward_Token_ETH";
 
-    function router_init(address _resolver) public initializer {
-        __Ownable_init();
-        _cacheInit(_resolver);
-    }
 
     function resolverAddressesRequired() public view override returns (bytes32[] memory ) {
         bytes32[] memory addresses = new bytes32[](2);
@@ -38,6 +35,12 @@ contract SystemRouter is OwnableUpgradeable, CacheResolver{
 
     function liquidityReward_Token_ETH() internal view returns (ILiquidityReward_Token_ETH) {
         return ILiquidityReward_Token_ETH(requireAndGetAddress(CONTRACT_LIQUIDITY_TOKEN_ETH));
+    }
+
+
+    function router_init(address _resolver) public initializer {
+        __Ownable_init();
+        _cacheInit(_resolver);
     }
     
     /** ========== public view functions ========== */
