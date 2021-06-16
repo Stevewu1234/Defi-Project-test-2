@@ -2,19 +2,17 @@
 pragma solidity ^0.8.0;
 
 // Inheritance
-import "../Tools/zeppelin/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "../Tools/CacheResolver.sol";
 
-// Libraries
-import "../Libraries/SafeMath.sol";
 
 // Internal References
 import "../Interface/ILiquidityPool.sol";
 import "../Interface/ITradingPool.sol";
+import "../Interface/IToken.sol";
 
 
-contract RewardPool is Ownable {
-    using SafeMath for uint256;
-    using SafeMath for uint8;
+contract RewardPool is OwnableUpgradeable, CacheResolver  {
 
     bytes32 private constant CONTRACT_REWARDTOKEN = "RewardToken";
     bytes32 private constant CONTRACT_LIQUIDITYPOOL = "LiquidityPool"; 
@@ -26,8 +24,8 @@ contract RewardPool is Ownable {
         addresses[2] = CONTRACT_TRADINGPOOL;
     }
 
-    function rewardToken() internal view returns (IRewardToken) {
-        return IRewardToken(requireAndGetAddress(CONTRACT_REWARDTOKEN));
+    function rewardToken() internal view returns (IToken) {
+        return IToken(requireAndGetAddress(CONTRACT_REWARDTOKEN));
     }
 
     function liquidityPool() internal view returns (ILiquidityPool) {
