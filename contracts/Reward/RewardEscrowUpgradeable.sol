@@ -7,8 +7,9 @@ import "../Tools/CacheResolverUpgradeable.sol";
 // Internal References
 import "../Interface/IToken.sol";
 import "../Interface/ISystemStatus.sol";
-import "../Interface/IPortalState.sol";
+import "../Interface/Iportal.sol";
 import "../Interface/IDragonReward.sol";
+import "../Interface/IPortal.sol";
 
 
 contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable {
@@ -16,16 +17,16 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
     /* ========== Address Resolver configuration ==========*/
     bytes32 private constant CONTRACT_REWARDTOKEN = "RewardToken"; 
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_PORTALSTATE = "PortalState";
     bytes32 private constant CONTRACT_DRAGONREWARD = "DragonReward";
+    bytes32 private constant CONTRACT_PORTAL = "Portal";
 
 
     function resolverAddressesRequired() public view override returns (bytes32[] memory) {
         bytes32[] memory addresses = new bytes32[](4);
         addresses[0] = CONTRACT_REWARDTOKEN;
         addresses[1] = CONTRACT_SYSTEMSTATUS;
-        addresses[2] = CONTRACT_PORTALSTATE;
-        addresses[3] = CONTRACT_DRAGONREWARD;
+        addresses[2] = CONTRACT_DRAGONREWARD;
+        addresses[3] = CONTRACT_PORTAL;
         return addresses;
     }
 
@@ -36,13 +37,13 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
     function systemStatue() internal view returns (ISystemStatus) {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
-
-    function portalState() internal view returns (IPortalState) {
-        return IPortalState(requireAndGetAddress(CONTRACT_PORTALSTATE));
-    }
         
     function dragonReward() internal view returns (IDragonReward) {
         return IDragonReward(requireAndGetAddress(CONTRACT_DRAGONREWARD));
+    }
+
+    function portal() internal view returns (IPortal) {
+        return IPortal(requireAndGetAddress(CONTRACT_PORTAL));
     }
 
     /** variables */
@@ -117,40 +118,7 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
         return accountTotalReleasedBalance[account].totalReleasedAmount;
     }
 
-
-
     /** ========== external mutative functions ========== */
-
-    // /**
-    //  * @description: user can check all of the escrowed token he has and claim all of them once
-    //  * @param receiver who receive escrowed token and the owner of escrowed token can authorize another user to claim
-    //  * @return {*}
-    //  */    
-    // function vest(address receiver, uint[] memory entryIDs) external vestActive {
-
-    //     // todo judge the receiver is the owner of these entried or not and get the authorization or not.
-
-    //     uint256 total;
-    //     for (uint i = 0; i < entryIDs.length; i++) {
-    //         accountEscrowed storage entry = accountEscrowedEvent[receiver][entryIDs[i]];
-
-    //         /* Skip entry if escrowAmount == 0 already vested */
-    //         if (entry.escrowedAmount != 0) {
-    //             uint256 amount = _claimableAmount(entry);
-
-    //             /* update entry to remove escrowAmount */
-    //             if (amount > 0) {
-    //                 entry.escrowedAmount = 0;
-    //             }
-
-    //             /* add quantity to total */
-    //             total = total.add(amount);
-    //         }
-    //     }
-    //     if(total != 0) {
-    //         _vest(receiver, amount);
-    //     }
-    // }
 
     function release(address receiver, bool keepLocked) external releaseActive {
         uint total;
@@ -182,7 +150,10 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
      * @param amount escrowed amount 
      * @param duration user can customize the duration but need to accord with min duration and max duration
      */    
-    function appendEscrowEntry(address account, uint amount, uint duration) external onlyDragonReward {
+    function appendEscrowEntry(address account, uint amount, uint duration) external onlyPortal {
+        require(account != address(0), "null address is not allowed");
+
+        rewardToken().transferFrom(_msgSender(), address(this), amount);
         _appendEscrowEntry(account, amount, duration);
 
     }
@@ -209,19 +180,20 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
     function _release(address receiver, uint _amount, bool keepLocked) internal {
         require(_amount <= rewardToken().balanceOf(address(this)), "there are not enough token to release");
 
-        uint escrowedandlockedAmount = portalState().balanceOfEscrowedAndAvailableAmount(receiver);
+        uint escrowedandlockedAmount = portal().getAccountEscrowedLockedAmount(receiver);
         if(escrowedandlockedAmount > 0) {
 
             // if user choose to keep locked token locked, 
             // transfer the Locked token Escrowed from balances
             if(keepLocked == true) {
                 if(_amount <= escrowedandlockedAmount) {
-                    portalState().transferEscrowedToBalancesLocked(receiver, _amount);
+                    portal().transferEscrowedToBalancesLocked(receiver, _amount);
                 }
 
                 if(_amount > escrowedandlockedAmount) {
                     uint _resttoken = _amount - escrowedandlockedAmount;
-                    portalState().transferEscrowedToBalancesLocked(receiver, escrowedandlockedAmount);
+                    portal().transferEscrowedToBalancesLocked(receiver, escrowedandlockedAmount);
+                    portal().updateAccountEscrowedAndAvailableAmount(receiver, uint _resttoken, false, true);
                     rewardToken().transfer(receiver, _resttoken);
                 }
 
@@ -230,7 +202,7 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
             // if user choose to withdraw all token even though there are locked part
             // withdraw escrowedandlockedAmount from portal
             if(keepLocked == false) {
-                portalState().withdraw(escrowedandlockedAmount);
+                portal().withdraw(escrowedandlockedAmount);
                 uint _resttoken = _amount - escrowedandlockedAmount;
                 rewardToken().transfer(receiver, _resttoken);
             }
@@ -240,7 +212,6 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
         // if there aren't token locked in portal, transfer directly
         if(escrowedandlockedAmount == 0) {
             rewardToken().transfer(receiver, _amount);
-
         }
 
         // update state in RewardEscrow
@@ -256,6 +227,9 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
     function _appendEscrowEntry(address account, uint _amount, uint duration) internal {
         require(duration >= min_escrowduration && duration <= max_escrowduration, "you must set the duration between allowed duration");
         require(_accountEscrowednum(account) <= max_escrowNumber, "you have escrowed too much, we suggest you wait for your first escrowed token released");
+
+        // update user's available lockable escrowed token
+        portal().updateAccountEscrowedAndAvailableAmount(account, _amount, true, false);
 
         _addAccountEscrowedBalance(account, _amount);
 
@@ -280,7 +254,6 @@ contract RewardEscrowUpgradeable is CacheResolverUpgradeable, OwnableUpgradeable
     function _addAccountEscrowedBalance(address account, uint _amount) internal {
         totalEscrowedBalance = totalEscrowedBalance + _amount;
         accountTotalEscrowedBalance[account] = accountTotalEscrowedBalance[account] + _amount;
-        portalState().updateAccountEscrowedAndAvailableAmount(account, _amount, true, false);
     }
 
     function _reduceAccountEscrowedBalance(address account, uint _amount) internal {
