@@ -3,17 +3,10 @@ pragma solidity ^0.8.0;
 
 // Inheritance
 import "./Tools/CacheResolver.sol";
-import "../node_modules/@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 // Internal References
-import "./Interface/IAddressResolver.sol";
-import "./Interface/ITokenState.sol";
-import "./Interface/IVoteRecord.sol";
 import "./Interface/IMerkleDistribution.sol";
 import "./Interface/ILiquidityReward_Token_ETH.sol";
-import "./Interface/ISystemStatus.sol";
-import "./Interface/IToken.sol";
-import "./Interface/IUniswapV2Pair.sol";
 
 contract SystemRouter is OwnableUpgradeable, CacheResolver{
 
