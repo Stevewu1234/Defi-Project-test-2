@@ -8,7 +8,7 @@ import "../../node_modules/@openzeppelin/contracts-upgradeable/access/OwnableUpg
 import "../Interface/IAddressResolver.sol";
 
 
-contract CacheResolver is OwnableUpgradeable  {
+contract CacheResolverUpgradeable is OwnableUpgradeable  {
     
     IAddressResolver public resolver;
 
