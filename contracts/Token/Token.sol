@@ -8,7 +8,7 @@ import "./ExternStateToken.sol";
 // Internal references
 import "../Interface/IVoteRecord.sol";
 import "../Interface/ISystemStatus.sol";
-import "../Interface/IPortalState.sol";
+import "../Interface/IPortal.sol";
 
 
 contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
@@ -16,7 +16,7 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
     /* ========== Address Resolver configuration ==========*/
     bytes32 private constant CONTRACT_VOTERECORD = "VoteRecord";
     bytes32 private constant CONTRACT_SYSTEMSTATUS = "SystemStatus";
-    bytes32 private constant CONTRACT_PORTALSTATE = "PortalState";
+    bytes32 private constant CONTRACT_PORTAL = "Portal";
 
 
 
@@ -24,7 +24,7 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
         bytes32[] memory addresses = new bytes32[](3);
         addresses[0] = CONTRACT_VOTERECORD;
         addresses[1] = CONTRACT_SYSTEMSTATUS;
-        addresses[2] = CONTRACT_PORTALSTATE;
+        addresses[2] = CONTRACT_PORTAL;
         return addresses;
     }
 
@@ -38,8 +38,8 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
         return ISystemStatus(requireAndGetAddress(CONTRACT_SYSTEMSTATUS));
     }
 
-    function portalState() internal view returns (IPortalState) {
-        return IPortalState(requireAndGetAddress(CONTRACT_PORTALSTATE));
+    function portal() internal view returns (IPortal) {
+        return IPortal(requireAndGetAddress(CONTRACT_PORTAL));
     }
 
 
@@ -110,7 +110,7 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
 
     /** ========== internal mutative function ========== */
     function _canTransfer(uint value) internal returns (bool) {
-        uint transferableAmount = portalState().getTransferableAmount(_msgSender(), value);
+        uint transferableAmount = portal().getTransferableAmount(_msgSender(), value);
         require(value <= transferableAmount, "can't transfer entered or escrowed");
         return true;
     }
