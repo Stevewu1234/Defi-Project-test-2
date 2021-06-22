@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
+// the systemStatus contract is referring to Synthetix's logic
 pragma solidity ^0.8.0;
 
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
-import "../Interface/ISystemStatus.sol";
+import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 
 contract SystemStatus is Ownable {
@@ -13,14 +13,14 @@ contract SystemStatus is Ownable {
     }
 
     struct functionstatus {
-        string functionname;
+        bytes32 functionname;
         bytes32 section;
         bool canSuspend;
         bool canResume;
     }
 
     mapping(bytes32 => mapping(address => Sectionstatus)) public SectionAccessControl;
-    mapping(string => mapping(address => functionstatus)) public FunctionAccessControl;
+    mapping(bytes32 => mapping(address => functionstatus)) public FunctionAccessControl;
 
     struct Suspendsion {
         bool suspended;
@@ -31,7 +31,7 @@ contract SystemStatus is Ownable {
         address operator;
     }
     mapping(bytes32 => Suspendsion) public SectionSuspendsionStatus;
-    mapping(string => mapping (bytes32 => Suspendsion)) public FunctionSuspendsionStatus;
+    mapping(bytes32 => mapping (bytes32 => Suspendsion)) public FunctionSuspendsionStatus;
 
     // Suspension public systemSuspension;
     // Suspension public RewardPoolSuspension;
@@ -40,7 +40,7 @@ contract SystemStatus is Ownable {
     // Suspension public StableCoinSuspension;
     // Suspension public DAOSuspension;
 
-    uint public delay;
+    // uint public delay;
 
     uint248 public constant SUSPENSION_REASON_UPGRADE = 1;
 
@@ -51,16 +51,16 @@ contract SystemStatus is Ownable {
     bytes32 public constant SECTION_STABLECOIN = "StableCoin";
     bytes32 public constant SECTION_DAO = "DAO";
 
-    string public constant TOKENMINT = "tokenmint";
-    string public constant TOKENBURN = "tokenburn";
-    string public constant VEST = "Vest";
-    
-    // constructor () {}
+    bytes32 public constant TOKENMINT = "tokenmint";
+    bytes32 public constant TOKENBURN = "tokenburn";
+    bytes32 public constant RELEASE = "release";
+    bytes32 public constant ENTER = "enter";
+    bytes32 public constant GETREWARD = "getward";
 
     /** ========== public view functions ========== */
 
     function isSystemUpgrading() public view returns (bool) {
-        return systemSuspendsion.suspended && systemSuspendsion.reason == SUSPENSION_REASON_UPGRADE;
+        return SectionSuspendsionStatus[SECTION_SYSTEM].suspended && SectionSuspendsionStatus[SECTION_SYSTEM].reason == SUSPENSION_REASON_UPGRADE;
     }
 
     function getSectionSuspendsionStatus(bytes32 section) public view returns(
@@ -70,53 +70,52 @@ contract SystemStatus is Ownable {
         address operator
         ) 
     {
-        Suspendsion suspendsionStatus = SectionSuspendsionStatus[section];
+        Suspendsion memory suspendsionStatus = SectionSuspendsionStatus[section];
         suspended = suspendsionStatus.suspended;
         reason = suspendsionStatus.reason;
         timestamp = suspendsionStatus.timestamp;
         operator = suspendsionStatus.operator;
     }
     
-    function getFunctionSuspendstionStatus(string functionname, bytes32 section) public view returns(
+    function getFunctionSuspendstionStatus(bytes32 functionname, bytes32 section) public view returns(
         bool suspended,
         uint reason,
         uint timestamp,
         address operator
     )
     {
-        Suspendsion suspendsionStatus = FunctionSuspendsionStatus[functionname][section];
+        Suspendsion memory suspendsionStatus = FunctionSuspendsionStatus[functionname][section];
         suspended = suspendsionStatus.suspended;
         reason = suspendsionStatus.reason;
         timestamp = suspendsionStatus.timestamp;
         operator = suspendsionStatus.operator;
     }
 
-
-    function requireSystemActive() external view {
+    function requireSystemActive() public view {
         _internalRequireSystemActive();
     }
 
-    function requireRewardPoolActive() external view {
+    function requireRewardPoolActive() public view {
         _internalRequireSystemActive();
         _internalRequireRewardPoolActive();
     }
 
-    function requireCollectionTradingActive() external view {
+    function requireCollectionTradingActive() public view {
         _internalRequireSystemActive();
         _internalRequireCollectionTradingActive();
     }
 
-    function requireActivitiesActive() external view {
+    function requireActivitiesActive() public view {
         _internalRequireSystemActive();
         _internalRequireActivitiesActive();
     }
 
-    function requireStableCoinActive() external view {
+    function requireStableCoinActive() public view {
         _internalRequireSystemActive();
         _internalRequireStableCoinActive();
     }
 
-    function requireDAOActive() external view {
+    function requireDAOActive() public view {
         _internalRequireSystemActive();
         _internalRequireDAOActive();
     }
@@ -155,7 +154,7 @@ contract SystemStatus is Ownable {
     // update function access list
 
     function updateFunctionAccessControl(
-        string functionname,
+        bytes32 functionname,
         bytes32 section,
         address account,
         bool canSuspend,
@@ -165,11 +164,11 @@ contract SystemStatus is Ownable {
     }
 
     function updateFunctionAccessControls(
-        string[] functionnames,
-        bytes32[] sections,
-        address[] accounts,
-        bool[] canSuspends,
-        bool[] canResumes
+        bytes32[] memory functionnames,
+        bytes32[] memory sections,
+        address[] memory accounts,
+        bool[] memory canSuspends,
+        bool[] memory canResumes
     ) external onlyOwner {
         require(
             functionnames.length == sections.length &&
@@ -186,40 +185,40 @@ contract SystemStatus is Ownable {
     /** ========== external mutative functions ========== */
 
 
-    function SectionSuspend(bytes32 section, uint reason) external {
+    function SectionSuspend(bytes32 section, uint8 reason) external {
         _internalSectionSuspend(section, reason);
 
         uint timestamp = SectionSuspendsionStatus[section].timestamp;
-        if(section == SECTION_SYSTEM) { emit SystemSuspended(reason,timestamp,msg.sender);}
-        else if(section == SECTION_REWARDPOOL) { emit RewardPoolSuspended(reason,timestamp,msg.sender);}
-        else if(section == SECTION_COLLECTIONT_TRADING) { emit CollectionTradingSuspended(reason,timestamp,msg.sender);}
-        else if(section == SECTION_ACTIVITIES) { emit ActivitiesSuspended(reason,timestamp,msg.sender);}
-        else if(section == SECTION_STABLECOIN) { emit StableCoinSuspended(reason,timestamp,msg.sender);}
-        else if(section == SECTION_DAO) { emit DAOSuspended(reason,timestamp,msg.sender);}
+        if(section == SECTION_SYSTEM) { emit SystemSuspended(reason,timestamp,_msgSender());}
+        else if(section == SECTION_REWARDPOOL) { emit RewardPoolSuspended(reason,timestamp,_msgSender());}
+        else if(section == SECTION_COLLECTIONT_TRADING) { emit CollectionTradingSuspended(reason,timestamp,_msgSender());}
+        else if(section == SECTION_ACTIVITIES) { emit ActivitiesSuspended(reason,timestamp,_msgSender());}
+        else if(section == SECTION_STABLECOIN) { emit StableCoinSuspended(reason,timestamp,_msgSender());}
+        else if(section == SECTION_DAO) { emit DAOSuspended(reason,timestamp,_msgSender());}
     }
 
-    function SectionResume(bytes32 resume) external {
+    function SectionResume(bytes32 section) external {
         _internalSectionResume(section);
 
         uint timestamp = SectionSuspendsionStatus[section].timestamp;
-        if(section == SECTION_SYSTEM) { emit SystemResumed(timestamp, msg.sender);}
-        else if(section == SECTION_REWARDPOOL) { emit RewardPoolResumed(timestamp, msg.sender);}
-        else if(section == SECTION_COLLECTIONT_TRADING) { emit CollectionTradingResumed(timestamp, msg.sender);}
-        else if(section == SECTION_ACTIVITIES) { emit ActivitiesResumed(timestamp, msg.sender);}
-        else if(section == SECTION_STABLECOIN) { emit StableCoinResumed(timestamp, msg.sender);}
-        else if(section == SECTION_DAO) { emit DAOResumed(timestamp, msg.sender);}
+        if(section == SECTION_SYSTEM) { emit SystemResumed(timestamp, _msgSender());}
+        else if(section == SECTION_REWARDPOOL) { emit RewardPoolResumed(timestamp, _msgSender());}
+        else if(section == SECTION_COLLECTIONT_TRADING) { emit CollectionTradingResumed(timestamp, _msgSender());}
+        else if(section == SECTION_ACTIVITIES) { emit ActivitiesResumed(timestamp, _msgSender());}
+        else if(section == SECTION_STABLECOIN) { emit StableCoinResumed(timestamp, _msgSender());}
+        else if(section == SECTION_DAO) { emit DAOResumed(timestamp, _msgSender());}
     }
 
-    function FunctionSuspend(string functionname, bytes32 section, uint reason) external {
+    function FunctionSuspend(bytes32 functionname, bytes32 section, uint8 reason) external {
         _internalFunctionSuspend(functionname, section, reason);
-        uint timestamp = FunctionSuspendsionStatus[functionname][msg.sender].timestamp;
-        emit FunctionSuspended(functionname, section, reason, timestamp, msg.sender);
+        uint timestamp = FunctionSuspendsionStatus[functionname][section].timestamp;
+        emit FunctionSuspended(functionname, section, reason, timestamp, _msgSender());
     }
 
-    function FunctionResume(string functionname, bytes32 section) external {
+    function FunctionResume(bytes32 functionname, bytes32 section) external {
         _internalFunctionResume(functionname, section);
-        uint timestamp = FunctionSuspendsionStatus[functionname][msg.sender].timestamp;
-        emit FunctionResumed(functionname, section, 0, timestamp, msg.sender);
+        uint timestamp = FunctionSuspendsionStatus[functionname][section].timestamp;
+        emit FunctionResumed(functionname, section, 0, timestamp, _msgSender());
     }
      
 
@@ -229,7 +228,7 @@ contract SystemStatus is Ownable {
 
 
     // function active requirement
-    function requireFunctionActive(string functionname, bytes32 section) external view {
+    function requireFunctionActive(bytes32 functionname, bytes32 section) external view returns (bool){
         if(section == SECTION_SYSTEM) { requireSystemActive(); }
         else if(section == SECTION_REWARDPOOL) { requireRewardPoolActive();}
         else if(section == SECTION_COLLECTIONT_TRADING) { requireCollectionTradingActive();}
@@ -238,6 +237,7 @@ contract SystemStatus is Ownable {
         else if(section == SECTION_DAO) { requireDAOActive();}
 
         _internalRequireFunctionActive(functionname,section);
+        return true;
     }
 
 
@@ -249,7 +249,7 @@ contract SystemStatus is Ownable {
 
     // section internal suspend
 
-    function _internalSectionSuspend(bytes32 section, uint reason) internal allownadmin {
+    function _internalSectionSuspend(bytes32 section, uint8 reason) internal allownadmin {
         _requireSectionAccessToSuspend(section);
         _privateSectionSuspend(section, reason);
 
@@ -262,14 +262,14 @@ contract SystemStatus is Ownable {
 
     // function internal suspend
 
-    function _internalFunctionSuspend(string functionname, bytes32 section, uint reason) internal allownadmin {
+    function _internalFunctionSuspend(bytes32 functionname, bytes32 section, uint8 reason) internal allownadmin {
         _requireFunctionAccessToSuspend(functionname, section);
-        _privateFunctionSuspend(fcuntion,section,reason);
+        _privateFunctionSuspend(functionname,section,reason);
     }
 
-    function _internalFunctionResume(string functionname, bytes32 section) internal allownadmin {
+    function _internalFunctionResume(bytes32 functionname, bytes32 section) internal allownadmin {
         _requireFunctionAccessToResume(functionname, section);
-        _privateFunctionResume(function, section);
+        _privateFunctionResume(functionname, section);
     }
 
     // section access list update
@@ -286,7 +286,7 @@ contract SystemStatus is Ownable {
     // function access list update
 
     function _internalUpdateFunctionAccessControl(
-        string functionname,
+        bytes32 functionname,
         bytes32 section,
         address account,
         bool canSuspend,
@@ -300,16 +300,16 @@ contract SystemStatus is Ownable {
     // section require access
 
     function _requireSectionAccessToSuspend(bytes32 section) internal view {
-        require(SectionAccessControl[section][msg.sender].canSuspend, "Restricted to access control list");
+        require(SectionAccessControl[section][_msgSender()].canSuspend, "Restricted to access control list");
     }
 
     function _requireSectionAccessToResume(bytes32 section) internal view {
-        require(SectionAccessControl[section][msg.sender].canResume, "Restricted to access control list");
+        require(SectionAccessControl[section][_msgSender()].canResume, "Restricted to access control list");
     }
     
     // function require access
 
-    function _requireFunctionAccessToSuspend(string functionname, bytes32 section) internal view {
+    function _requireFunctionAccessToSuspend(bytes32 functionname, bytes32 section) internal view {
         require(
             section == SECTION_SYSTEM ||
             section == SECTION_REWARDPOOL ||
@@ -319,11 +319,11 @@ contract SystemStatus is Ownable {
             section == SECTION_DAO,
             "Invalid section supplied"
         );
-        require(FunctionAccessControl[functionname][msg.sender].section == section, "the section of this function don't match");
-        require(FunctionAccessControl[functionname][msg.sender].canSuspend, "Restricted to access control list");
+        require(FunctionAccessControl[functionname][_msgSender()].section == section, "the section of this function don't match");
+        require(FunctionAccessControl[functionname][_msgSender()].canSuspend, "Restricted to access control list");
     }
 
-    function _requireFunctionAccessToResume(string functionname, bytes32 section) internal view {
+    function _requireFunctionAccessToResume(bytes32 functionname, bytes32 section) internal view {
         require(
             section == SECTION_SYSTEM ||
             section == SECTION_REWARDPOOL ||
@@ -333,8 +333,8 @@ contract SystemStatus is Ownable {
             section == SECTION_DAO,
             "Invalid section supplied"
         );
-        require(FunctionAccessControl[functionname][msg.sender].section == section, "the section of this function don't match");
-        require(FunctionAccessControl[functionname][msg.sender].canResume, "Restricted to access control list");
+        require(FunctionAccessControl[functionname][_msgSender()].section == section, "the section of this function don't match");
+        require(FunctionAccessControl[functionname][_msgSender()].canResume, "Restricted to access control list");
     }
 
 
@@ -345,39 +345,40 @@ contract SystemStatus is Ownable {
 
     function _internalRequireSystemActive() internal view {
         require(
-            !SectionSuspendsionStatus(SECTION_SYSTEM).suspended,
-            SectionSuspendsionStatus(SECTION_SYSTEM).reason == SUSPENSION_REASON_UPGRADE
+            !SectionSuspendsionStatus[SECTION_SYSTEM].suspended,
+            SectionSuspendsionStatus[SECTION_SYSTEM].reason == SUSPENSION_REASON_UPGRADE
                 ? "system is upgrading, please wait"
                 : "system is suspended. Operation prohibited"
         );
     }
 
     function _internalRequireRewardPoolActive() internal view {
-        require(!SectionSuspendsionStatus(SECTION_REWARDPOOL).suspended, "RewardPool is suspended. Operation prohibited");
+        require(!SectionSuspendsionStatus[SECTION_REWARDPOOL].suspended, "RewardPool is suspended. Operation prohibited");
     }
 
     function _internalRequireCollectionTradingActive() internal view {
-        require(!SectionSuspendsionStatus(SECTION_COLLECTIONT_TRADING).suspended, "Collection Trading is suspended. Operation prohibited");
+        require(!SectionSuspendsionStatus[SECTION_COLLECTIONT_TRADING].suspended, "Collection Trading is suspended. Operation prohibited");
     }
 
     function _internalRequireActivitiesActive() internal view {
-        require(!SectionSuspendsionStatus(SECTION_ACTIVITIES).suspended, "Activities of system is suspended. Operation prohibited");
+        require(!SectionSuspendsionStatus[SECTION_ACTIVITIES].suspended, "Activities of system is suspended. Operation prohibited");
     }
 
     function _internalRequireStableCoinActive() internal view {
-        require(!SectionSuspendsionStatus(SECTION_STABLECOIN).suspended, "Stable Coin section is suspended. Operation prohibited");
+        require(!SectionSuspendsionStatus[SECTION_STABLECOIN].suspended, "Stable Coin section is suspended. Operation prohibited");
     }
 
     function _internalRequireDAOActive() internal view {
-        require(!SectionSuspendsionStatus(SECTION_DAO).suspended, "DAO section is suspended. Operation prohibited");
+        require(!SectionSuspendsionStatus[SECTION_DAO].suspended, "DAO section is suspended. Operation prohibited");
     }
 
 
 
     /** the following part is used to judge if the function of each section of system is active or not. */
 
-    function _internalRequireFunctionActive(string functionname, bytes32 section) internal view {
-        require(!FunctionSuspendsionStatus[functionname, section], "the current function is suspended, Operation prohibited");
+    function _internalRequireFunctionActive(bytes32 functionname, bytes32 section) internal view returns (bool) {
+        require(!FunctionSuspendsionStatus[functionname][section].suspended, "the current function is suspended, Operation prohibited");
+        return true;
     }
 
 
@@ -389,11 +390,11 @@ contract SystemStatus is Ownable {
 
     // section private suspend
 
-    function _privateSectionSuspend(bytes32 section, uint reason) private {
+    function _privateSectionSuspend(bytes32 section, uint8 reason) private {
         SectionSuspendsionStatus[section].suspended = true;
         SectionSuspendsionStatus[section].reason = reason;
         SectionSuspendsionStatus[section].timestamp = block.timestamp;
-        SectionSuspendsionStatus[section].operator = msg.sender;
+        SectionSuspendsionStatus[section].operator = _msgSender();
     }
 
     function _privateSectionResume(bytes32 section) private {
@@ -425,14 +426,14 @@ contract SystemStatus is Ownable {
 
     // fucntion private suspend
 
-    function _privateFunctionSuspend(string functionname, bytes32 section, uint reason) private {
+    function _privateFunctionSuspend(bytes32 functionname, bytes32 section, uint8 reason) private {
         FunctionSuspendsionStatus[functionname][section].suspended = true;
         FunctionSuspendsionStatus[functionname][section].reason = reason;
         FunctionSuspendsionStatus[functionname][section].timestamp = block.timestamp;
-        FunctionSuspendsionStatus[functionname][section].operator = msg.sender;
+        FunctionSuspendsionStatus[functionname][section].operator = _msgSender();
     }
 
-    function _privateFunctionResume(string functionname, bytes32 section) private {
+    function _privateFunctionResume(bytes32 functionname, bytes32 section) private {
         FunctionSuspendsionStatus[functionname][section].suspended = false;
         FunctionSuspendsionStatus[functionname][section].reason = 0;
         FunctionSuspendsionStatus[functionname][section].timestamp = 0;
@@ -440,7 +441,7 @@ contract SystemStatus is Ownable {
     }
 
     function _privateUpdateFunctionAccessControl(
-        string functionname,
+        bytes32 functionname,
         bytes32 section,
         address account,
         bool canSuspend,
@@ -464,13 +465,13 @@ contract SystemStatus is Ownable {
 
     /** ========== modifier ========== */
     modifier allownadmin() {
-        require(owner() == msg.sender, "you're not the admin or authorized user");
+        require(owner() == _msgSender(), "you're not the admin or authorized user");
         _;
     }
 
     /** ========== event ========== */
     event SectionAccessControlUpdated(bytes32 section, address account, bool canSuspend, bool canResume);
-    event FunctionAccessControlUpdated(string functionname, bytes32 section, address account, bool canSuspend, bool canResume);
+    event FunctionAccessControlUpdated(bytes32 functionname, bytes32 section, address account, bool canSuspend, bool canResume);
 
     event SystemSuspended(uint reason, uint timestamp, address operator);
     event RewardPoolSuspended(uint reason, uint timestamp, address operator);
@@ -484,8 +485,8 @@ contract SystemStatus is Ownable {
     event CollectionTradingResumed(uint timestamp, address operator);
     event ActivitiesResumed(uint timestamp, address operator);
     event StableCoinResumed(uint timestamp, address operator);
-    event DAOResumed(uint reason, uint timestamp, address operator);
+    event DAOResumed(uint timestamp, address operator);
 
-    event FunctionSuspended(string functionname, bytes32 section, uint reason, uint timestamp, address operator);
-    event FunctionResumed(string functionname, bytes32 section, uint reason, uint timestamp, address operator);
+    event FunctionSuspended(bytes32 functionname, bytes32 section, uint reason, uint timestamp, address operator);
+    event FunctionResumed(bytes32 functionname, bytes32 section, uint reason, uint timestamp, address operator);
 }
