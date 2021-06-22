@@ -1,19 +1,24 @@
-pragma solidity ^0.6.0;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
 
 // Inheritance
-import "../node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "../../node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 // Internal References
-import "./AddressResolver.sol"
+import "../Interface/IAddressResolver.sol";
 
-contract CacheResolver {
+
+contract CacheResolver is OwnableUpgradeable  {
     
-    AddressResolver public addressresolver;
-    
-    mapping(bytes32 => address) addressCache;
+    IAddressResolver public resolver;
+
+    mapping(bytes32 => address) private addressCache;
+
+    constructor (address _resolver) { resolver = IAddressResolver(_resolver); }
 
     /** ========== public view functions ========== */
-    function resolverAddressesRequired() public view returns (bytes32[] memory addresses) {}
+
+    function resolverAddressesRequired() public view virtual returns (bytes32[] memory addresses)  {}
 
 
     /** ========== external mutative functions ========== */
@@ -28,6 +33,12 @@ contract CacheResolver {
             addressCache[name] = destination;
             emit CacheUpdated(name, destination);
         }
+    }
+
+
+    function setAddressResolver(address _resolver) external onlyOwner {
+        require(_resolver != address(0), "the resolver is extremely important, so you must set a correct address");
+        resolver = IAddressResolver(_resolver);
     }
 
     /** ========== external view functions ========== */
