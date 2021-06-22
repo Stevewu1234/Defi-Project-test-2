@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 // Inheritance
-import "../Tools/CacheResolver.sol";
+import "../Tools/CacheResolverUpgradeable.sol";
 import "./ExternStateToken.sol";
 
 // Internal references
@@ -11,7 +11,7 @@ import "../Interface/ISystemStatus.sol";
 import "../Interface/IPortal.sol";
 
 
-contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
+contract Token is OwnableUpgradeable, CacheResolverUpgradeable, ExternStateToken {
     
     /* ========== Address Resolver configuration ==========*/
     bytes32 private constant CONTRACT_VOTERECORD = "VoteRecord";
@@ -78,15 +78,15 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
     /** ========== public mutative functions ========== */
 
     function transfer(address recipient, uint256 amount) public systemActive returns (bool)  {
-        _canTransfer(amount);
-        _transfer(_msgSender(), recipient, amount);
+        _canTransfer(_msgSender(), amount);
+        require(_transfer(_msgSender(), recipient, amount), "fail to transfer");
         voteRecord().moveDelegates(_msgSender(), recipient, amount);
         return true;
     }
 
     function transferFrom(address sender, address recipient, uint256 amount) public systemActive returns (bool)  {
-        _canTransfer(amount);
-        _transfer(sender, recipient, amount);
+        _canTransfer(sender, amount);
+        require(_transfer(_msgSender(), recipient, amount), "fail to transfer");
 
         uint256 currentAllowance = tokenState.allowance(sender, _msgSender());
         require(currentAllowance >= amount, "ERC20: transfer amount exceeds allowance");
@@ -108,10 +108,10 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
         
     }
 
-    /** ========== internal mutative function ========== */
-    function _canTransfer(uint value) internal returns (bool) {
-        uint transferableAmount = portal().getTransferableAmount(_msgSender(), value);
-        require(value <= transferableAmount, "can't transfer entered or escrowed");
+    /** ========== internal view function ========== */
+    function _canTransfer(address sender, uint value) internal view returns (bool) {
+        uint transferableAmount = portal().getTransferableAmount(sender);
+        require(value <= transferableAmount, "can not transfer entered or escrowed");
         return true;
     }
 
@@ -123,25 +123,25 @@ contract Token is OwnableUpgradeable, CacheResolver, ExternStateToken {
         _;
     }
 
-    function _mintfunctionActive() private view {
+    function _mintfunctionActive() private view returns (bool) {
         bytes32 functionname = "tokenmint";
         bytes32 section_system = "System";
-        systemStatus().requireFunctionActive(functionname,section_system);
+        return systemStatus().requireFunctionActive(functionname,section_system);
     }
 
     modifier mintfunctionActive() {
-        _mintfunctionActive();
+        require(_mintfunctionActive(), "mint function has been blocked");
         _;
     }
 
-    function _burnfunctionActive() private view {
+    function _burnfunctionActive() private view returns (bool) {
         bytes32 functionname = "tokenburn";
         bytes32 section_system = "System";
-        systemStatus().requireFunctionActive(functionname,section_system);
+        return systemStatus().requireFunctionActive(functionname,section_system);
     }
 
     modifier burnfunctionActive() {
-        _burnfunctionActive();
+        require(_burnfunctionActive(), "burn function has been blocked");
         _;
     }
 
