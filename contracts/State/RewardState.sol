@@ -2,53 +2,46 @@
 pragma solidity ^0.8.0;
 
 // Inheritance
-import "./Tools/CacheResolver.sol";
+import "../Tools/CacheResolverUpgradeable.sol";
 
 // Libraries
 import "../../node_modules/@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "../../node_modules/@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+import "../../node_modules/@openzeppelin/contracts/utils/math/Math.sol";
 
 // Internal References
-import "../Interface/IToken.sol";
-import "../Interface/IPortalState.sol";
 import "../Interface/IPortal.sol";
 import "../Interface/IRewardEscrowUpgradeable.sol";
+import "../Interface/IToken.sol";
 
-contract RewardState is CacheResolver, OwnableUpgradeable {
+contract RewardState is OwnableUpgradeable, CacheResolverUpgradeable {
     using SafeMath for uint;
     using SafeERC20 for IERC20;
 
 
     /* ========== Address Resolver configuration ==========*/
-    bytes32 private constant CONTRACT_TOKEN = "Token";
     bytes32 private constant CONTRACT_PORTAL= "Portal";
-    bytes32 private constant CONTRACT_PORTALSTATE = "PortalState";
-    bytes32 private constant CONTRACT_REWARDESCROW = "RewardEscrow";
+    bytes32 private constant CONTRACT_REWARDESCROWUPGRADEABLE = "RewardEscrowUpgradeable";
+    bytes32 private constant CONTRACT_TOKEN = "Token";
 
     function resolverAddressesRequired() public view override returns (bytes32[] memory ) {
         bytes32[] memory addresses = new bytes32[](3);
-        addresses[0] = CONTRACT_TOKEN;
-        addresses[1] = CONTRACT_PORTAL;
-        addresses[2] = CONTRACT_PORTALSTATE;
-        addresses[3] = CONTRACT_REWARDESCROW;
+        addresses[0] = CONTRACT_PORTAL;
+        addresses[1] = CONTRACT_REWARDESCROWUPGRADEABLE;
+        addresses[2] = CONTRACT_TOKEN;
         return addresses;
     }
 
-    function lockedToken() internal view returns (IToken) {
-        return IToken(requireAndGetAddress(CONTRACT_TOKEN));
-    }
-
     function portal() internal view returns (IPortal) {
-        return IPortal(requireAndGetAddress(CONTRACT_PORTALSTATE));
+        return IPortal(requireAndGetAddress(CONTRACT_PORTAL));
     }   
 
-    function portalState() internal view returns (IPortalState) {
-        return IPortalState(requireAndGetAddress(CONTRACT_PORTALSTATE));
+    function rewardEscrowUpgradeable() internal view returns (IRewardEscrowUpgradeable) {
+        return IRewardEscrowUpgradeable(requireAndGetAddress(CONTRACT_REWARDESCROWUPGRADEABLE));
     }
 
-    function rewardEscrow() internal view returns (IRewardEscrowUpgradeable) {
-        return IRewardEscrowUpgradeable(requireAndGetAddress(CONTRACT_REWARDESCROW));
+    function token() internal view returns (IToken) {
+        return IToken(requireAndGetAddress(CONTRACT_TOKEN));
     }
 
     /** ========== variables ========== */
@@ -64,7 +57,7 @@ contract RewardState is CacheResolver, OwnableUpgradeable {
     mapping(address => uint256) public userRewardPerTokenPaid;
     mapping(address => uint256) public rewards;
 
-    function rewardState_init(address _resolver, address _rewardDistribution) {
+    function rewardState_init(address _resolver, address _rewardDistribution) external initializer {
         __Ownable_init();
         _cacheInit(_resolver);
         rewardDistribution = _rewardDistribution;
@@ -80,7 +73,7 @@ contract RewardState is CacheResolver, OwnableUpgradeable {
     }
 
     function rewardPerToken() public view returns (uint256) {
-        if (portalState().getTotalLockedAmount() == 0) {
+        if (portal().getTotalLockedAmount() == 0) {
             return rewardPerTokenStored;
         }
         return
@@ -89,18 +82,18 @@ contract RewardState is CacheResolver, OwnableUpgradeable {
                     .sub(lastUpdateTime)
                     .mul(rewardRate)
                     .mul(1e18)
-                    .div(portalState().getTotalLockedAmount())
+                    .div(portal().getTotalLockedAmount())
             );
     }
 
     function balanceOf(address account) public view returns (uint) {
-        return portalState().getAccountTotalLockedAmount(account);
+        return portal().getAccountTotalLockedAmount(account);
     }
 
     function earned(address account) public view returns (uint256) {
         return
             balanceOf(account)
-                .mul(lockedToken().sub(userRewardPerTokenPaid[account]))
+                .mul(rewardPerToken().sub(userRewardPerTokenPaid[account]))
                 .div(1e18)
                 .add(rewards[account]);
     }
@@ -112,10 +105,10 @@ contract RewardState is CacheResolver, OwnableUpgradeable {
         uint256 reward = earned(account);
         if (reward > 0) {
             rewards[account] = 0;
-            rewardEscrow().appendEscrowEntry(account, reward, _rewardSaveDuration);
+            rewardEscrowUpgradeable().appendEscrowEntry(account, reward, _rewardSaveDuration);
             emit RewardPaid(account, reward);
         }
-
+        require(token().transfer(address(rewardEscrowUpgradeable()), reward), "there are no enough token to transfer");
         return reward;
     }
 
@@ -142,10 +135,6 @@ contract RewardState is CacheResolver, OwnableUpgradeable {
     {
         rewardDistribution = _rewardDistribution;
     }
-
-    /** ========== external view functions ========== */
-
-
 
     /** ========== modifier ========== */
 
