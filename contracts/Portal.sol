@@ -109,23 +109,23 @@ contract Portal is OwnableUpgradeable,CacheResolverUpgradeable {
      * @dev update user's attendace rate and 
      * @param {*}
      */
-    function withdrow(address player, uint value, bool withdrawall) public {
+    function unlockBalances(address player, uint value) public {
 
         // get user's locked token to withdraw
-        (uint balancesLockedAmount, uint escrowedLockedAmount) = _getAccountLockedAmount(player);
+        uint balancesLockedAmount = getAccountBalancesLockedAmount(player);
 
         // remove locked token register
-        _removeRegisterPortalLock(player, balancesLockedAmount, escrowedLockedAmount, value, withdrawall);
+        _removeRegisterPortalLock(player, balancesLockedAmount, value);
 
-        emit withdrawn(player, value, withdrawall);
+        emit unlockedBalances(player, value);
     }
 
     function getReward(address player, uint _rewardSaveDuration) public {
         rewardState().getReward(player, _rewardSaveDuration);
     }
 
-    function exit(address player, uint value, bool withdrawall, uint _rewardSaveDuration) public {
-        withdrow(player, value, withdrawall);
+    function exit(address player, uint value, uint _rewardSaveDuration) public {
+        unlockedBalances(player, value);
         getReward(player, _rewardSaveDuration);
     }
 
@@ -151,6 +151,10 @@ contract Portal is OwnableUpgradeable,CacheResolverUpgradeable {
             require(accountEscrowedAndAvailableAmount[account] >= amount, "you don't have enough escrowed token");
             accountEscrowedAndAvailableAmount[account] = accountEscrowedAndAvailableAmount[account] - amount;
         }
+    }
+
+    function updateAccountEscrowedLockedAmount(address account, uint amount, bool add, bool sub) external onlyRewardEscrow {
+        _updateAccountEscrowedLockedAmount(account, amount, add, sub);
     }
 
     /** ========== external view function ========== */
@@ -202,28 +206,11 @@ contract Portal is OwnableUpgradeable,CacheResolverUpgradeable {
 
     function _removeRegisterPortalLock(
         address player,
-        uint balancesLockedAmount, 
-        uint escrowedLockedAmount, 
-        uint value, 
-        bool withdrawall
+        uint balancesLockedAmount,
+        uint value
         ) internal {
-
-            if(withdrawall == true) {
-                _updateAccountBalancesLockedAmount(player, balancesLockedAmount, false, true);
-                _updateAccountEscrowedLockedAmount(player, escrowedLockedAmount, false, true);
-            }
-
-            if(withdrawall == false) {
-                if(value > escrowedLockedAmount) {
-                    uint _resttoken = value - escrowedLockedAmount;
-                    _updateAccountEscrowedLockedAmount(player, escrowedLockedAmount, false, true);
-                    _updateAccountBalancesLockedAmount(player, _resttoken, false, true);
-                }
-
-                if(value < escrowedLockedAmount) {
-                    _updateAccountEscrowedLockedAmount(player, value, false, true);
-                }
-            }
+            require(value <= balancesLockedAmount, "you do not have more locked amount to unlock");
+            _updateAccountBalancesLockedAmount(player, value, false, true);
     }
 
     // update account escrowed and locked token
@@ -296,5 +283,5 @@ contract Portal is OwnableUpgradeable,CacheResolverUpgradeable {
     /** ========== event ========== */
     event transferredEscrowedToBalancesLocked(address indexed account, uint indexed amount);
     event entered(address indexed player, uint indexed value, bool indexed enterall);
-    event withdrawn(address indexed player, uint indexed value, bool indexed withdrawall);
+    event unlockedBalances(address indexed player, uint indexed value);
 }
