@@ -96,6 +96,7 @@ contract RewardEscrowUpgradeable is OwnableUpgradeable, CacheResolverUpgradeable
         max_escrowNumber = _max_escrowNumber;
         min_escrowduration = _min_escrowduration;
         max_escrowduration = _max_escrowduration;
+        emit durationChanged(min_escrowduration, max_escrowduration);
     }
 
 
@@ -160,6 +161,8 @@ contract RewardEscrowUpgradeable is OwnableUpgradeable, CacheResolverUpgradeable
     function updateDuration(uint min_escrowduration_, uint max_escrowduration_) external onlyOwner {
         min_escrowduration = min_escrowduration_;
         max_escrowduration = max_escrowduration_;
+
+        durationChanged(min_escrowduration, max_escrowduration);
     }
 
     /** ========== external view functions ========== */
@@ -194,57 +197,61 @@ contract RewardEscrowUpgradeable is OwnableUpgradeable, CacheResolverUpgradeable
         uint escrowedandlockedAmount = portal().getAccountEscrowedLockedAmount(receiver);
         if(escrowedandlockedAmount > 0) {
 
-            // if user choose to keep locked token locked, 
-            // transfer the Locked token Escrowed from balances
+            // update lock status of Portal contract
             if(keepLocked == true) {
+                
+                if(_amount > escrowedandlockedAmount) {
+
+                    uint _restAmount = _amount - escrowedandlockedAmount;
+
+                    // convert amount status from escrowedlocked to balanceslocked
+                    portal().transferEscrowedToBalancesLocked(receiver, escrowedandlockedAmount);
+
+                    portal().updateAccountEscrowedAndAvailableAmount(receiver, _restAmount, false, true);
+                }
+
                 if(_amount <= escrowedandlockedAmount) {
+
                     portal().transferEscrowedToBalancesLocked(receiver, _amount);
                 }
 
-                if(_amount > escrowedandlockedAmount) {
-                    uint _resttoken = _amount - escrowedandlockedAmount;
-                    portal().transferEscrowedToBalancesLocked(receiver, escrowedandlockedAmount);
-
-                    portal().updateAccountEscrowedAndAvailableAmount(receiver, _resttoken, false, true);
-                    token().transfer(receiver, _resttoken);
-                }
-
             }
+            
 
-            // if user choose to withdraw all token even though there are locked part
-            // withdraw escrowedandlockedAmount from portal
             if(keepLocked == false) {
                 if(_amount > escrowedandlockedAmount) {
-                    portal().withdraw(receiver, escrowedandlockedAmount, false);
-                    uint _resttoken = _amount - escrowedandlockedAmount;
-                    token().transfer(receiver, _resttoken);
+                    uint _restAmount = _amount - escrowedandlockedAmount;
+
+                    // unlock escrowed and locked amount 
+                    portal().updateAccountEscrowedLockedAmount(receiver, escrowedandlockedAmount, false, true);
+
+                    portal().updateAccountEscrowedAndAvailableAmount(receiver, _restAmount, false, true);
                 }
 
                 if(_amount <= escrowedandlockedAmount) {
-                    portal().withdraw(receiver, escrowedandlockedAmount, false);
+
+                    portal().updateAccountEscrowedLockedAmount(receiver, _amount, false, true);
                 }
             }
-
-        }
-        
-        // if there aren't token locked in portal, transfer directly
-        if(escrowedandlockedAmount == 0) {
-            token().transfer(receiver, _amount);
         }
 
         // update state in RewardEscrow
         _reduceAccountEscrowedBalance(receiver, _amount);
+
         _updateAccountReleasedEntry(receiver, _amount);
+
+        // transfer released amount to users whatever they keep locked amount or not.
+        token().transfer(receiver, _amount);
+
         emit released(receiver, _amount);
     }
 
-
-    //todo user can choose to vest their token which is not staked into the contract or vest those have been staked into contract. 
-    //     if the vesting token have been staked into contract that maybe I need to provide a new function that vest and stake the token immediately.
-
     function _appendEscrowEntry(address account, uint _amount, uint _duration) internal {
+
         require(_duration >= min_escrowduration && _duration <= max_escrowduration, "you must set the duration between allowed duration");
         require(_accountEscrowednum(account) <= max_escrowNumber, "you have escrowed too much, we suggest you wait for your first escrowed token released");
+
+
         uint duration = _duration * 1 days;
 
         // update user's available lockable escrowed token
@@ -255,6 +262,11 @@ contract RewardEscrowUpgradeable is OwnableUpgradeable, CacheResolverUpgradeable
         uint EndTime = block.timestamp + duration;
         uint entryID = nextEntry;
 
+        if(_accountEscrowednum(account) != 0 ) {
+            uint accountLastEntryId = accountEscrowedEntries[account][_accountEscrowednum(account) - 1];
+            require(EndTime > accountEscrowedEvent[account][accountLastEntryId].escrowedEndTime, "end time of new entry must excceed the last escrow entry of user");
+        }
+
         accountEscrowedEvent[account][entryID] = accountEscrowed({escrowedEndTime: EndTime, escrowedAmount:_amount});
         accountEscrowedEntries[account].push(entryID);
 
@@ -264,27 +276,31 @@ contract RewardEscrowUpgradeable is OwnableUpgradeable, CacheResolverUpgradeable
         
     }
 
-    //todo add a internal function to calculate the locked reward of token, the longer they lock, the more they get. 
-    //     and the function call is not from this contract, it will call a reward contract to modify some variables to calculate the reward.
-    //     but this reward calculation will be confused becase all of the confirmed reward have been lock in this contract. If there is a new reward
-    //     from this lock duration that will need to create a new escrow event. That will generate new confusion.
-
-
     function _addAccountEscrowedBalance(address account, uint _amount) internal {
         totalEscrowedBalance = totalEscrowedBalance + _amount;
         accountTotalEscrowedBalance[account] = accountTotalEscrowedBalance[account] + _amount;
+
+        emit accountEscrowedBalanceAdded(account, _amount);
+        emit totalEscrowedAmountUpdated(totalEscrowedBalance, _amount);
     }
 
     function _reduceAccountEscrowedBalance(address account, uint _amount) internal {
         totalEscrowedBalance = totalEscrowedBalance - _amount;
         accountTotalEscrowedBalance[account] = accountTotalEscrowedBalance[account] - _amount;
+
+        emit accountEscrowedBalanceReduced(account, _amount);
+        emit totalEscrowedAmountUpdated(totalEscrowedBalance, _amount);
     }
 
     function _updateAccountReleasedEntry(address account, uint amount) internal {
         accountReleased storage entry = accountTotalReleasedBalance[account];
+
         uint currentAmount = entry.totalReleasedAmount;
+
         entry.releasedAcquiredTime = block.timestamp;
         entry.totalReleasedAmount = currentAmount + amount;
+        
+        emit releasedEntryUpdated(entry.releasedAcquiredTime, entry.totalReleasedAmount);
     }
 
     /** ========== internal view functions ========== */
@@ -307,14 +323,25 @@ contract RewardEscrowUpgradeable is OwnableUpgradeable, CacheResolverUpgradeable
 
 
     modifier onlyInternalContract {
-        require(address(rewardState()) == _msgSender(), "only allow internal contract to access");
+        require(_msgSender() == address(rewardState()), "only allow rewardState contract to access");
         _;
     }
-    //todo add a modifier to limit the function call of appendEscrowEntry must from a pointed contract
-    //todo add a modifier to limit the function call of vest must from authorized user or the owner
+    
  
     /** ========== event ========== */
+
     event released(address indexed receiver, uint indexed amount);
+
     event appendedEscrowEntry(address indexed account, uint indexed amount, uint indexed duration);
+
+    event accountEscrowedBalanceAdded(address indexed account, uint indexed addedEscrowedAmount);
+
+    event accountEscrowedBalanceReduced(address indexed account, uint indexed reducedEscrowedAmount);
+
+    event durationChanged(uint indexed min_escrowduration, uint indexed max_escrowduration);
+
+    event totalEscrowedAmountUpdated(uint indexed totalEscrowedBalance, uint indexed updatedAmount);
+
+    event releasedEntryUpdated(uint indexed updatedTime, uint indexed totalReleasedAmount);
 
 }
