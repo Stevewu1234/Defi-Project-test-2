@@ -139,7 +139,7 @@ contract RewardState is OwnableUpgradeable, CacheResolverUpgradeable {
     /** ========== modifier ========== */
 
     modifier onlyInternalContract() {
-        require(_msgSender() == address(portal()), "only internal contract can access");
+        require(_msgSender() == address(portal()), "only portal contract can access");
         _;
     }
 
