@@ -63,7 +63,7 @@ uniswap's main page encounter a problem that I can't use my own created token to
 
 Github Issue link: https://github.com/Uniswap/uniswap-interface/issues/1662
 
-and the new link is: https://bafybeicghxqfdqypossftqecsre3lhmick2uwv3kfb7e3kd7op4wfimo7q.ipfs.dweb.link/#/swap (the problem has been fixed)
+and the new link is: https://bafybeicghxqfdqypossftqecsre3lhmick2uwv3kfb7e3kd7op4wfimo7q.ipfs.dweb.link/#/swap
 
 merkleProof: 0x51497cbc97b6689a4e4c405150112089165ed0b918cabc6a87fce4e8d71a211e
 
