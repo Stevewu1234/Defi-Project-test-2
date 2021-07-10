@@ -70,4 +70,3 @@ merkleProof: 0x51497cbc97b6689a4e4c405150112089165ed0b918cabc6a87fce4e8d71a211e
 LP Token Address(TAG/ETH): 0xF36B62569e6bd99188046655842A8ffE99BcabC9
 
 purchase page: https://app.uniswap.org/#/add/v2/ETH/0x33AB99b22992b37b7B8f2153Ac37dbc473474647
-
