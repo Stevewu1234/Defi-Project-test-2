@@ -16,12 +16,6 @@ abstract contract SendValueWithFallbackWithdraw is ContextUpgradeable, Reentranc
         return pendingWithdrawals[account];
     }
 
-
-    function withdraw() public {
-        withdrawfor(_msgSender());
-    }
-
-
     function withdrawfor(address payable account) public nonReentrant {
         uint256 amount = pendingWithdrawals[account];
         require(amount > 0, "no pending funds");
@@ -42,7 +36,7 @@ abstract contract SendValueWithFallbackWithdraw is ContextUpgradeable, Reentranc
     function _sendValueWithFallbackWithdraw(address payable account, uint256 amount, uint256 gaslimit) private {
         require(amount > 0, "no enough funds to send");
 
-        (bool success, ) = account.call({value: amount, gas: gaslimit})("");
+        (bool success, ) = account.call{value: amount, gas: gaslimit}("");
 
         if(!success) {
             pendingWithdrawals[account] = pendingWithdrawals[account].add(amount);

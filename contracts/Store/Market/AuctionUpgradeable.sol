@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 
 import "./MarketFeeUpgradeable.sol";
@@ -85,7 +84,7 @@ abstract contract AuctionUpgradeable is
 
         require(reservePrice > 0, "the reserve price must not be 0");
         require(tokenToAuctionId[nftContract][tokenId] == 0, "sorry, the auction of the NFT has been in progress");
-        require(IERC721Upgradeable().ownerOf(tokenId) == _msgSender(), "sorry, you could not sell NFT which you do not have");
+        require(IMetaArt(nftContract).ownerOf(tokenId) == _msgSender(), "sorry, you could not sell NFT which you do not have");
 
         uint256 auctionId = _getNextAuctionId();
         tokenToAuctionId[nftContract][tokenId] = auctionId;
@@ -93,22 +92,22 @@ abstract contract AuctionUpgradeable is
         reserveAuctions[auctionId] = ReserveAuction( {
             nftContract: nftContract,
             tokenId: tokenId,
-            seller: _msgSender(),
+            seller: payable(_msgSender()),
             duration: _duration,
             extensionDuration: _extensionDuration,
             endTime: 0,  // endTime is only known once the first bid
-            bidder: address(0), // bidder will be recorded once the placebid() calling
+            bidder: payable(address(0)), // bidder will be recorded once the placebid() calling
             currentPrice: reservePrice
         });
         
         // once the auction of the NFT has been created, the NFT will be transferred from caller address
-        IERC721Upgradeable(nftContract).transferFrom(_msgSender(), address(this), tokenId);
+        IMetaArt(nftContract).transferFrom(_msgSender(), address(this), tokenId);
 
         emit auctionCreated(
             nftContract,
             tokenId,
-            _msgSender(),
             auctionId,
+            _msgSender(),
             _duration,
             _extensionDuration,
             reservePrice
@@ -136,7 +135,7 @@ abstract contract AuctionUpgradeable is
         delete reserveAuctions[auctionId];
         delete tokenToAuctionId[reserveAuction.nftContract][reserveAuction.tokenId];
 
-        IERC721Upgradeable(reserveAuction.nftContract).transfer(reserveAuction.seller, reserveAuction.tokenId);
+        IMetaArt(reserveAuction.nftContract).transferFrom(address(this), reserveAuction.seller, reserveAuction.tokenId);
 
         emit auctionCancelled(auctionId);
     }
@@ -160,7 +159,7 @@ abstract contract AuctionUpgradeable is
             require(msg.value >= reserveAuction.currentPrice, "bid must be at least the reserve price");
 
             reserveAuction.currentPrice = msg.value;
-            reserveAuction.bidder = _msgSender();
+            reserveAuction.bidder = payable(_msgSender());
             reserveAuction.endTime = block.timestamp + reserveAuction.duration;
         } else {
             require(reserveAuction.endTime >= block.timestamp, "sorry, the auction is over");
@@ -171,7 +170,7 @@ abstract contract AuctionUpgradeable is
             address payable originalBidder = reserveAuction.bidder;
             
             reserveAuction.currentPrice = msg.value;
-            reserveAuction.currentPrice = _msgSender();
+            reserveAuction.bidder = payable(_msgSender());
 
             // If there is no one bid in extensionDuration after endTime, the last bidder will get the NFT
             if(reserveAuction.endTime - block.timestamp < reserveAuction.extensionDuration) {
@@ -194,7 +193,7 @@ abstract contract AuctionUpgradeable is
         delete reserveAuctions[auctionId];
         delete tokenToAuctionId[reserveAuction.nftContract][reserveAuction.tokenId];
 
-        IERC721Upgradeable(reserveAuction.nftContract).transfer(reserveAuction.bidder, reserveAuction.tokenId);
+        IMetaArt(reserveAuction.nftContract).transferFrom(address(this), reserveAuction.bidder, reserveAuction.tokenId);
 
         (uint256 metaFee, 
         uint256 royalties, 
@@ -204,7 +203,7 @@ abstract contract AuctionUpgradeable is
             reserveAuction.seller, 
             reserveAuction.currentPrice);
 
-        emit auctionFinalized(metaFee, royalties, ownerFee);
+        emit auctionFinalized(auctionId, reserveAuction.seller, reserveAuction.bidder, metaFee, royalties, ownerFee);
     }
 
     // even though the auction has started, admin can still cancel reserve auction but need reasonable reason.
@@ -216,7 +215,7 @@ abstract contract AuctionUpgradeable is
         delete reserveAuctions[auctionId];
         delete tokenToAuctionId[reserveAuction.nftContract][reserveAuction.tokenId];
 
-        IERC721Upgradeable(reserveAuction.nftContract).transfer(reserveAuction.seller, reserveAuction.tokenId);
+        IMetaArt(reserveAuction.nftContract).transferFrom(address(this), reserveAuction.seller, reserveAuction.tokenId);
 
         if(reserveAuction.bidder != address(0)) {
             _sendValueWithFallbackWithdrawWithLowGasLimit(reserveAuction.bidder, reserveAuction.currentPrice);
@@ -235,7 +234,7 @@ abstract contract AuctionUpgradeable is
             // original address must sign the migration operation through meta site.
             _requireAuthorizedMigration(originalAddress, newAddress, signature);
 
-            for(uint256  i = 0; i < auctionIds[].length; i++) {
+            for(uint256  i = 0; i < auctionIds.length; i++) {
                 uint256 auctionId = auctionIds[i];
                 ReserveAuction storage reserveAuction = reserveAuctions[auctionId];
 
@@ -279,8 +278,8 @@ abstract contract AuctionUpgradeable is
     event auctionCreated(
         address indexed nftContract,
         uint256 indexed tokenId,
-        address indexed seller,
         uint256 indexed auctionId,
+        address seller,
         uint256 duration,
         uint256 extensionDuration,
         uint256 reservePrice

@@ -20,11 +20,12 @@ contract Market is
         uint256 _primaryBasisShare_,
         uint256 _secondBasisShare_,
         uint256 _secondCreatorBasisShare_,
-        address payable metaTreasury_
+        address payable metaTreasury_,
+        address admin
         ) external {
         auction_init();
         metafee_init(_primaryBasisShare_, _secondBasisShare_, _secondCreatorBasisShare_, metaTreasury_);
-        role_init();
+        role_init(admin);
     }
 
     function adminUpdateConfig(

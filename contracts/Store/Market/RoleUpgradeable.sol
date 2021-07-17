@@ -3,7 +3,6 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol";
 import "../NFT/IMetaArt.sol";
 
 abstract contract RoleUpgradeable is Initializable, AccessControlUpgradeable {
@@ -17,17 +16,21 @@ abstract contract RoleUpgradeable is Initializable, AccessControlUpgradeable {
 
     /** ========== external mutative functions ========== */
 
-    function updateAdmin(address _newadmin) external onlyRole(getRoleAdmin(ADMIN)) {
+    function updateAdmin(address _newadmin) external {
         require(_newadmin != address(0), "new address must not be null");
         grantRole(DEFAULT_ADMIN_ROLE, _newadmin);
     }
 
-    function updateOperator(address _newoperator) external onlyRole(getRoleAdmin(ADMIN)) {
+    function updateOperator(address _newoperator) external {
         require(_newoperator != address(0), "new address must not be null");
         grantRole(OPERATOR, _newoperator);
     }
 
-    function revokeOperator(address revokingOperator) external onlyRole(getRoleAdmin(ADMIN)) {
+    function revokeAdmin(address revokingAdmin) external {
+        revokeRole(DEFAULT_ADMIN_ROLE, revokingAdmin);
+    }
+
+    function revokeOperator(address revokingOperator) external {
         revokeRole(OPERATOR, revokingOperator);
     }
 
@@ -38,7 +41,7 @@ abstract contract RoleUpgradeable is Initializable, AccessControlUpgradeable {
         uint256 tokenId
         ) internal view returns (address payable seller){
 
-        return seller = payable(IERC721Upgradeable(nftContract).ownerOf(tokenId));
+        return seller = payable(IMetaArt(nftContract).ownerOf(tokenId));
     } 
 
 
@@ -53,6 +56,7 @@ abstract contract RoleUpgradeable is Initializable, AccessControlUpgradeable {
         require(hasRole(OPERATOR, _msgSender()), "only operator can call");
         _;
     }
+
 
 
 }

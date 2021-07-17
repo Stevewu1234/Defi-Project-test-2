@@ -19,7 +19,7 @@ abstract contract MarketFeeUpgradeable is
 
     mapping(address => mapping(uint256 => bool)) private firstSaleCompleted;
 
-    address private metaTreasury;
+    address payable private metaTreasury;
 
     
     // contract init function
@@ -27,7 +27,7 @@ abstract contract MarketFeeUpgradeable is
         uint256 _primaryBasisShare_,
         uint256 _secondBasisShare_,
         uint256 _secondCreatorBasisShare_,
-        address metaTreasury_
+        address payable metaTreasury_
     ) internal initializer {
         _primaryBasisShare = _primaryBasisShare_;
         _secondBasisShare = _secondBasisShare_;
@@ -60,7 +60,7 @@ abstract contract MarketFeeUpgradeable is
         uint256 creatorSecondaryFee,
         uint256 ownerFee
     ) {
-        (nftContract, , creatorSecondaryFee, , ownerFee) = _getFees (
+        (metaFee, , creatorSecondaryFee, , ownerFee) = _getFees (
             nftContract, tokenId, _getSeller(nftContract, tokenId), price
         );
     }
@@ -170,7 +170,7 @@ abstract contract MarketFeeUpgradeable is
         owenrFee = price - metaFee - royalties;
     }
 
-    function _getIsPrimary(address nftContract, uint256 tokenId, address creator, address seller) private view returns (bool) {
+    function _getIsPrimary(address nftContract, uint256 tokenId, address seller) private view returns (bool) {
         address creator = IMetaArt(nftContract).getTokenIdCreator(tokenId);
         address assistant = IMetaArt(nftContract).getCreatorAssistant(creator);
         bool ifFirstSaleRole = creator == seller || assistant == seller;
@@ -189,9 +189,9 @@ abstract contract MarketFeeUpgradeable is
     event auctionFeeDistributed(
         uint256 indexed metaFee,
         address indexed royaltiesRecipientAddress,
-        uint256 indexed royalties,
+        uint256 royalties,
         address indexed tokenOwner,
-        uint256 indexed owenrFee
+        uint256 owenrFee
     );
 
 }

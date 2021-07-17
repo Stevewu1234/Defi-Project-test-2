@@ -87,165 +87,6 @@ abstract contract ContextUpgradeable is Initializable {
 }
 
 
-// File @openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol@v4.1.0
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Interface of the ERC165 standard, as defined in the
- * https://eips.ethereum.org/EIPS/eip-165[EIP].
- *
- * Implementers can declare support of contract interfaces, which can then be
- * queried by others ({ERC165Checker}).
- *
- * For an implementation, see {ERC165}.
- */
-interface IERC165Upgradeable {
-    /**
-     * @dev Returns true if this contract implements the interface defined by
-     * `interfaceId`. See the corresponding
-     * https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[EIP section]
-     * to learn more about how these ids are created.
-     *
-     * This function call must use less than 30 000 gas.
-     */
-    function supportsInterface(bytes4 interfaceId) external view returns (bool);
-}
-
-
-// File @openzeppelin/contracts-upgradeable/token/ERC721/IERC721Upgradeable.sol@v4.1.0
-
-// SPDX-License-Identifier: MIT
-
-pragma solidity ^0.8.0;
-
-/**
- * @dev Required interface of an ERC721 compliant contract.
- */
-interface IERC721Upgradeable is IERC165Upgradeable {
-    /**
-     * @dev Emitted when `tokenId` token is transferred from `from` to `to`.
-     */
-    event Transfer(address indexed from, address indexed to, uint256 indexed tokenId);
-
-    /**
-     * @dev Emitted when `owner` enables `approved` to manage the `tokenId` token.
-     */
-    event Approval(address indexed owner, address indexed approved, uint256 indexed tokenId);
-
-    /**
-     * @dev Emitted when `owner` enables or disables (`approved`) `operator` to manage all of its assets.
-     */
-    event ApprovalForAll(address indexed owner, address indexed operator, bool approved);
-
-    /**
-     * @dev Returns the number of tokens in ``owner``'s account.
-     */
-    function balanceOf(address owner) external view returns (uint256 balance);
-
-    /**
-     * @dev Returns the owner of the `tokenId` token.
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist.
-     */
-    function ownerOf(uint256 tokenId) external view returns (address owner);
-
-    /**
-     * @dev Safely transfers `tokenId` token from `from` to `to`, checking first that contract recipients
-     * are aware of the ERC721 protocol to prevent tokens from being forever locked.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must exist and be owned by `from`.
-     * - If the caller is not `from`, it must be have been allowed to move this token by either {approve} or {setApprovalForAll}.
-     * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-     *
-     * Emits a {Transfer} event.
-     */
-    function safeTransferFrom(address from, address to, uint256 tokenId) external;
-
-    /**
-     * @dev Transfers `tokenId` token from `from` to `to`.
-     *
-     * WARNING: Usage of this method is discouraged, use {safeTransferFrom} whenever possible.
-     *
-     * Requirements:
-     *
-     * - `from` cannot be the zero address.
-     * - `to` cannot be the zero address.
-     * - `tokenId` token must be owned by `from`.
-     * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
-     *
-     * Emits a {Transfer} event.
-     */
-    function transferFrom(address from, address to, uint256 tokenId) external;
-
-    /**
-     * @dev Gives permission to `to` to transfer `tokenId` token to another account.
-     * The approval is cleared when the token is transferred.
-     *
-     * Only a single account can be approved at a time, so approving the zero address clears previous approvals.
-     *
-     * Requirements:
-     *
-     * - The caller must own the token or be an approved operator.
-     * - `tokenId` must exist.
-     *
-     * Emits an {Approval} event.
-     */
-    function approve(address to, uint256 tokenId) external;
-
-    /**
-     * @dev Returns the account approved for `tokenId` token.
-     *
-     * Requirements:
-     *
-     * - `tokenId` must exist.
-     */
-    function getApproved(uint256 tokenId) external view returns (address operator);
-
-    /**
-     * @dev Approve or remove `operator` as an operator for the caller.
-     * Operators can call {transferFrom} or {safeTransferFrom} for any token owned by the caller.
-     *
-     * Requirements:
-     *
-     * - The `operator` cannot be the caller.
-     *
-     * Emits an {ApprovalForAll} event.
-     */
-    function setApprovalForAll(address operator, bool _approved) external;
-
-    /**
-     * @dev Returns if the `operator` is allowed to manage all of the assets of `owner`.
-     *
-     * See {setApprovalForAll}
-     */
-    function isApprovedForAll(address owner, address operator) external view returns (bool);
-
-    /**
-      * @dev Safely transfers `tokenId` token from `from` to `to`.
-      *
-      * Requirements:
-      *
-      * - `from` cannot be the zero address.
-      * - `to` cannot be the zero address.
-      * - `tokenId` token must exist and be owned by `from`.
-      * - If the caller is not `from`, it must be approved to move this token by either {approve} or {setApprovalForAll}.
-      * - If `to` refers to a smart contract, it must implement {IERC721Receiver-onERC721Received}, which is called upon a safe transfer.
-      *
-      * Emits a {Transfer} event.
-      */
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
-}
-
-
 // File @openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol@v4.1.0
 
 // SPDX-License-Identifier: MIT
@@ -385,6 +226,34 @@ library StringsUpgradeable {
         return string(buffer);
     }
 
+}
+
+
+// File @openzeppelin/contracts-upgradeable/utils/introspection/IERC165Upgradeable.sol@v4.1.0
+
+// SPDX-License-Identifier: MIT
+
+pragma solidity ^0.8.0;
+
+/**
+ * @dev Interface of the ERC165 standard, as defined in the
+ * https://eips.ethereum.org/EIPS/eip-165[EIP].
+ *
+ * Implementers can declare support of contract interfaces, which can then be
+ * queried by others ({ERC165Checker}).
+ *
+ * For an implementation, see {ERC165}.
+ */
+interface IERC165Upgradeable {
+    /**
+     * @dev Returns true if this contract implements the interface defined by
+     * `interfaceId`. See the corresponding
+     * https://eips.ethereum.org/EIPS/eip-165#how-interfaces-are-identified[EIP section]
+     * to learn more about how these ids are created.
+     *
+     * This function call must use less than 30 000 gas.
+     */
+    function supportsInterface(bytes4 interfaceId) external view returns (bool);
 }
 
 
@@ -687,11 +556,18 @@ interface IMetaArt {
     
     function getTokenIdCreator(uint256 tokenId) external view returns (address payable);
 
-    function getCreatorAssistant(uint256 tokenId) external view returns (address payable);
+    function getCreatorAssistant(address creator) external view returns (address payable);
 
     function getAssistantCreator(address assistant) external view returns (address payable);
 
     function getPaymentAddress(uint256 tokenId) external view returns (address payable paymentAddress);
+
+    function ownerOf(uint256 tokenId) external view returns (address owner);
+
+
+    
+
+    function transferFrom(address from, address to, uint256 tokenId) external; 
 }
 
 
@@ -702,42 +578,60 @@ pragma solidity ^0.8.0;
 
 
 
-abstract contract RoleUpgradeable is AccessControlUpgradeable {
+abstract contract RoleUpgradeable is Initializable, AccessControlUpgradeable {
 
-    bytes32 constant private ADMIN;
-    bytes32 constant private OPERATOR;
+    bytes32 constant private OPERATOR = "operator";
 
-    function role_init() internal initializer {
+    function role_init(address admin) internal initializer {
         __AccessControl_init();
+        _setupRole(DEFAULT_ADMIN_ROLE, admin);
     }
 
-    function updateAdmin(address _newadmin) external onlyRole(getRoleAdmin(ADMIN)) {
+    /** ========== external mutative functions ========== */
+
+    function updateAdmin(address _newadmin) external {
         require(_newadmin != address(0), "new address must not be null");
-        grantRole(ADMIN, _newadmin);
+        grantRole(DEFAULT_ADMIN_ROLE, _newadmin);
     }
 
-    function updateOperator(address _newoperator) external onlyRole(getRoleAdmin(ADMIN)) {
+    function updateOperator(address _newoperator) external {
         require(_newoperator != address(0), "new address must not be null");
         grantRole(OPERATOR, _newoperator);
     }
 
-    modifier onlyMetaAdmin() {
-        require(getRoleAdmin(ADMIN) == _msgSender(), "only admin can call");
-        _;
+    function revokeAdmin(address revokingAdmin) external {
+        revokeRole(DEFAULT_ADMIN_ROLE, revokingAdmin);
     }
 
-    modifier onlyMetaOperator() {
-        _checkRole(OPERATOR, _msgSender());
-        _;
+    function revokeOperator(address revokingOperator) external {
+        revokeRole(OPERATOR, revokingOperator);
     }
+
+    /** ========== internal view functions ========== */
 
     function _getSeller(
         address nftContract, 
         uint256 tokenId
         ) internal view returns (address payable seller){
 
-        return seller = payable(IERC721Upgradeable(nftContract).ownerOf(tokenId));
+        return seller = payable(IMetaArt(nftContract).ownerOf(tokenId));
     } 
+
+
+    /** ========== modifier ========== */
+
+    modifier onlyMetaAdmin() {
+        require(hasRole(DEFAULT_ADMIN_ROLE, _msgSender()), "only admin can call");
+        _;
+    }
+
+    modifier onlyMetaOperator() {
+        require(hasRole(OPERATOR, _msgSender()), "only operator can call");
+        _;
+    }
+
+
+
 }
 
 
@@ -1150,12 +1044,6 @@ abstract contract SendValueWithFallbackWithdraw is ContextUpgradeable, Reentranc
         return pendingWithdrawals[account];
     }
 
-
-    function withdraw() public {
-        withdrawfor(_msgSender());
-    }
-
-
     function withdrawfor(address payable account) public nonReentrant {
         uint256 amount = pendingWithdrawals[account];
         require(amount > 0, "no pending funds");
@@ -1176,7 +1064,7 @@ abstract contract SendValueWithFallbackWithdraw is ContextUpgradeable, Reentranc
     function _sendValueWithFallbackWithdraw(address payable account, uint256 amount, uint256 gaslimit) private {
         require(amount > 0, "no enough funds to send");
 
-        (bool success, ) = account.call({value: amount, gas: gaslimit})("");
+        (bool success, ) = account.call{value: amount, gas: gaslimit}("");
 
         if(!success) {
             pendingWithdrawals[account] = pendingWithdrawals[account].add(amount);
@@ -1210,7 +1098,7 @@ abstract contract MarketFeeUpgradeable is
 
     mapping(address => mapping(uint256 => bool)) private firstSaleCompleted;
 
-    address private metaTreasury;
+    address payable private metaTreasury;
 
     
     // contract init function
@@ -1218,7 +1106,7 @@ abstract contract MarketFeeUpgradeable is
         uint256 _primaryBasisShare_,
         uint256 _secondBasisShare_,
         uint256 _secondCreatorBasisShare_,
-        address metaTreasury_
+        address payable metaTreasury_
     ) internal initializer {
         _primaryBasisShare = _primaryBasisShare_;
         _secondBasisShare = _secondBasisShare_;
@@ -1251,7 +1139,7 @@ abstract contract MarketFeeUpgradeable is
         uint256 creatorSecondaryFee,
         uint256 ownerFee
     ) {
-        (nftContract, , creatorSecondaryFee, , ownerFee) = _getFees (
+        (metaFee, , creatorSecondaryFee, , ownerFee) = _getFees (
             nftContract, tokenId, _getSeller(nftContract, tokenId), price
         );
     }
@@ -1361,7 +1249,7 @@ abstract contract MarketFeeUpgradeable is
         owenrFee = price - metaFee - royalties;
     }
 
-    function _getIsPrimary(address nftContract, uint256 tokenId, address creator, address seller) private view returns (bool) {
+    function _getIsPrimary(address nftContract, uint256 tokenId, address seller) private view returns (bool) {
         address creator = IMetaArt(nftContract).getTokenIdCreator(tokenId);
         address assistant = IMetaArt(nftContract).getCreatorAssistant(creator);
         bool ifFirstSaleRole = creator == seller || assistant == seller;
@@ -1380,9 +1268,9 @@ abstract contract MarketFeeUpgradeable is
     event auctionFeeDistributed(
         uint256 indexed metaFee,
         address indexed royaltiesRecipientAddress,
-        uint256 indexed royalties,
+        uint256 royalties,
         address indexed tokenOwner,
-        uint256 indexed owenrFee
+        uint256 owenrFee
     );
 
 }
@@ -1830,7 +1718,7 @@ pragma solidity ^0.8.0;
 
 
 
-abstract contract MigrationSignature is SignatureChecker {  
+abstract contract MigrationSignature {  
 
 
     function toAsciiString(address x) internal view returns (string memory) {
@@ -1867,7 +1755,7 @@ abstract contract MigrationSignature is SignatureChecker {
             abi.encodePacked("I authorize Foundation to migrate to", toAsciiString(newAddress))
         );
 
-        require(isValidSignatureNow(originalAddress, hash, signature), "signature is incorrect");
+        require(SignatureChecker.isValidSignatureNow(originalAddress, hash, signature), "signature is incorrect");
     }
 }
 
@@ -1876,7 +1764,6 @@ abstract contract MigrationSignature is SignatureChecker {
 
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
-
 
 
 
@@ -1957,7 +1844,7 @@ abstract contract AuctionUpgradeable is
 
         require(reservePrice > 0, "the reserve price must not be 0");
         require(tokenToAuctionId[nftContract][tokenId] == 0, "sorry, the auction of the NFT has been in progress");
-        require(IERC721Upgradeable().ownerOf(tokenId) == _msgSender(), "sorry, you could not sell NFT which you do not have");
+        require(IMetaArt(nftContract).ownerOf(tokenId) == _msgSender(), "sorry, you could not sell NFT which you do not have");
 
         uint256 auctionId = _getNextAuctionId();
         tokenToAuctionId[nftContract][tokenId] = auctionId;
@@ -1965,16 +1852,16 @@ abstract contract AuctionUpgradeable is
         reserveAuctions[auctionId] = ReserveAuction( {
             nftContract: nftContract,
             tokenId: tokenId,
-            seller: _msgSender(),
+            seller: payable(_msgSender()),
             duration: _duration,
             extensionDuration: _extensionDuration,
             endTime: 0,  // endTime is only known once the first bid
-            bidder: address(0), // bidder will be recorded once the placebid() calling
+            bidder: payable(address(0)), // bidder will be recorded once the placebid() calling
             currentPrice: reservePrice
         });
         
         // once the auction of the NFT has been created, the NFT will be transferred from caller address
-        IERC721Upgradeable(nftContract).transferFrom(_msgSender(), address(this), tokenId);
+        IMetaArt(nftContract).transferFrom(_msgSender(), address(this), tokenId);
 
         emit auctionCreated(
             nftContract,
@@ -2008,7 +1895,7 @@ abstract contract AuctionUpgradeable is
         delete reserveAuctions[auctionId];
         delete tokenToAuctionId[reserveAuction.nftContract][reserveAuction.tokenId];
 
-        IERC721Upgradeable(reserveAuction.nftContract).transfer(reserveAuction.seller, reserveAuction.tokenId);
+        IMetaArt(reserveAuction.nftContract).transferFrom(address(this), reserveAuction.seller, reserveAuction.tokenId);
 
         emit auctionCancelled(auctionId);
     }
@@ -2032,7 +1919,7 @@ abstract contract AuctionUpgradeable is
             require(msg.value >= reserveAuction.currentPrice, "bid must be at least the reserve price");
 
             reserveAuction.currentPrice = msg.value;
-            reserveAuction.bidder = _msgSender();
+            reserveAuction.bidder = payable(_msgSender());
             reserveAuction.endTime = block.timestamp + reserveAuction.duration;
         } else {
             require(reserveAuction.endTime >= block.timestamp, "sorry, the auction is over");
@@ -2043,7 +1930,7 @@ abstract contract AuctionUpgradeable is
             address payable originalBidder = reserveAuction.bidder;
             
             reserveAuction.currentPrice = msg.value;
-            reserveAuction.currentPrice = _msgSender();
+            reserveAuction.bidder = payable(_msgSender());
 
             // If there is no one bid in extensionDuration after endTime, the last bidder will get the NFT
             if(reserveAuction.endTime - block.timestamp < reserveAuction.extensionDuration) {
@@ -2066,7 +1953,7 @@ abstract contract AuctionUpgradeable is
         delete reserveAuctions[auctionId];
         delete tokenToAuctionId[reserveAuction.nftContract][reserveAuction.tokenId];
 
-        IERC721Upgradeable(reserveAuction.nftContract).transfer(reserveAuction.bidder, reserveAuction.tokenId);
+        IMetaArt(reserveAuction.nftContract).transferFrom(address(this), reserveAuction.bidder, reserveAuction.tokenId);
 
         (uint256 metaFee, 
         uint256 royalties, 
@@ -2076,7 +1963,7 @@ abstract contract AuctionUpgradeable is
             reserveAuction.seller, 
             reserveAuction.currentPrice);
 
-        emit auctionFinalized(metaFee, royalties, ownerFee);
+        emit auctionFinalized(auctionId, reserveAuction.seller, reserveAuction.bidder, metaFee, royalties, ownerFee);
     }
 
     // even though the auction has started, admin can still cancel reserve auction but need reasonable reason.
@@ -2088,7 +1975,7 @@ abstract contract AuctionUpgradeable is
         delete reserveAuctions[auctionId];
         delete tokenToAuctionId[reserveAuction.nftContract][reserveAuction.tokenId];
 
-        IERC721Upgradeable(reserveAuction.nftContract).transfer(reserveAuction.seller, reserveAuction.tokenId);
+        IMetaArt(reserveAuction.nftContract).transferFrom(address(this), reserveAuction.seller, reserveAuction.tokenId);
 
         if(reserveAuction.bidder != address(0)) {
             _sendValueWithFallbackWithdrawWithLowGasLimit(reserveAuction.bidder, reserveAuction.currentPrice);
@@ -2107,7 +1994,7 @@ abstract contract AuctionUpgradeable is
             // original address must sign the migration operation through meta site.
             _requireAuthorizedMigration(originalAddress, newAddress, signature);
 
-            for(uint256  i = 0; i < auctionIds[].length; i++) {
+            for(uint256  i = 0; i < auctionIds.length; i++) {
                 uint256 auctionId = auctionIds[i];
                 ReserveAuction storage reserveAuction = reserveAuctions[auctionId];
 
@@ -2151,8 +2038,8 @@ abstract contract AuctionUpgradeable is
     event auctionCreated(
         address indexed nftContract,
         uint256 indexed tokenId,
-        address indexed seller,
         uint256 indexed auctionId,
+        address seller,
         uint256 duration,
         uint256 extensionDuration,
         uint256 reservePrice
@@ -2222,11 +2109,12 @@ contract Market is
         uint256 _primaryBasisShare_,
         uint256 _secondBasisShare_,
         uint256 _secondCreatorBasisShare_,
-        address payable metaTreasury_
+        address payable metaTreasury_,
+        address admin
         ) external {
         auction_init();
         metafee_init(_primaryBasisShare_, _secondBasisShare_, _secondCreatorBasisShare_, metaTreasury_);
-        role_init();
+        role_init(admin);
     }
 
     function adminUpdateConfig(
