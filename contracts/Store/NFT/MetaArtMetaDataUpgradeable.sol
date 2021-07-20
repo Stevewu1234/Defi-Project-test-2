@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contract-upgradeable/utils/ContextUpgradeable.sol";
-import "@openzeppelin/contract-upgradeable/token/ERC721/ERC721Upgradeable.sol";
-import "@openzeppelin/contract-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721URIStorageUpgradeable.sol";
 
-abstract contract MetaArtMetaDataUpgradeable is ContextUpgradeable, ERC721Upgradeable, ERC721URIStorageUpgradeable {
+abstract contract MetaArtMetaDataUpgradeable is ContextUpgradeable, ERC721URIStorageUpgradeable {
 
-    mapping (address => string) private creatorToIPFSPath;
+    mapping (address => mapping(string => bool)) private creatorToIPFSPath;
 
-    function metadata_init() internal initializer {
+    function metadata_init_unchained() internal initializer {
         __Context_init_unchained();
+        __ERC721URIStorage_init_unchained();
     }
 
     /** ========== public view functions ========== */
     function getCreatorUniqueIPFSHashAddress(string memory _path) public view returns (bool) {
-        return creatorToIPFSPath[_msgSender()] == _path;
+        return creatorToIPFSPath[_msgSender()][_path];
     }
 
 
@@ -26,12 +27,13 @@ abstract contract MetaArtMetaDataUpgradeable is ContextUpgradeable, ERC721Upgrad
         require(getCreatorUniqueIPFSHashAddress(_path), "NFT has been minted");
 
         address creator = _msgSender();
-        creatorToIPFSPath[creator] = _path;
+        creatorToIPFSPath[creator][_path] = true;
 
         _setTokenURI(tokenId, _path);
 
         emit IPFSPathset(creator);
     }
+
 
     /** ========== event ========== */
 

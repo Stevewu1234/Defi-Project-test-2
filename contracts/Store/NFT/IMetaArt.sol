@@ -2,13 +2,16 @@ interface IMetaArt {
     
     function getTokenIdCreator(uint256 tokenId) external view returns (address payable);
 
-    function getCreatorAssistant(uint256 tokenId) external view returns (address payable);
+    function getCreatorAssistant(address creator) external view returns (address payable);
 
-    function getTokenOwnerShip(uint tokenId) external view returns (address payable creator, address payable assistant)
+    function getAssistantCreator(address assistant) external view returns (address payable);
 
     function getPaymentAddress(uint256 tokenId) external view returns (address payable paymentAddress);
 
-    function isCreatorEqualOwner(uint256 tokenId) external view returns (bool);
+    function ownerOf(uint256 tokenId) external view returns (address owner);
 
-    function hasCreatorAssistant(uint256 tokenId) external view returns (bool);
+
+    
+
+    function transferFrom(address from, address to, uint256 tokenId) external; 
 }
