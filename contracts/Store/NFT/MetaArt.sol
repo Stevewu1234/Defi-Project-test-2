@@ -13,10 +13,10 @@ contract MetaArt is
         MetaArtMintUpgradeable
     {
     
-    function metaArt_init(string memory _name, string memory _symbol) external initializer {
+    function metaArt_init(string memory _name, string memory _symbol, uint256 totalAmount) external initializer {
         creator_init_unchained();
         metadata_init_unchained();
-        metaMint_init(_name, _symbol);
+        metaMint_init(_name, _symbol, totalAmount);
     }
     
 
