@@ -13,7 +13,6 @@ abstract contract MetaArtMintUpgradeable is
     Initializable, 
     ContextUpgradeable, 
     ERC721Upgradeable,
-    ERC721URIStorageUpgradeable,
     MetaArtCreatorUpgradeable,
     MetaArtMetaDataUpgradeable
     {
@@ -47,19 +46,34 @@ abstract contract MetaArtMintUpgradeable is
         emit ArtWorkMinted(creator, tokenId, tokenIPFSPath);
     }
 
-    function burn(uint256 tokenId) external {
+    function burn(uint256 tokenId) external onlyCreatorAndOwner(tokenId) {
         _burn(tokenId);
         _deleteTokenIdCreator(tokenId);
-        _deleteCreatorAssistant(_msgSender());
+        _deleteTokenIdIPFS(tokenId);
     }
 
 
-    function _burn(uint256 tokenId) internal virtual override(ERC721Upgradeable, ERC721URIStorageUpgradeable) {
+
+    /** ========== override functions ========== */
+    
+    function _burn(uint256 tokenId) internal virtual override(ERC721URIStorageUpgradeable, ERC721Upgradeable) {
         super._burn(tokenId);
     }
-    
-    function tokenURI(uint256 tokenId) public view virtual override(ERC721Upgradeable, ERC721URIStorageUpgradeable) returns (string memory) {
+
+    function tokenURI(uint256 tokenId) public view virtual override(ERC721URIStorageUpgradeable, ERC721Upgradeable)returns (string memory) {
         return super.tokenURI(tokenId);
+    }
+    
+    function _baseURI() internal view virtual override(MetaArtMetaDataUpgradeable, ERC721Upgradeable) returns (string memory) {
+        return _baseURI();
+    }
+
+
+    /** ========== modifier ========== */
+    modifier onlyCreatorAndOwner(uint256 tokenId) {
+        require(getTokenIdCreator(tokenId) == _msgSender(), "sorry, caller must be creator");
+        require(ownerOf(tokenId) == _msgSender(), "sorry, caller must be NFT owner");
+        _;
     }
 
     /** ========== event ========== */
