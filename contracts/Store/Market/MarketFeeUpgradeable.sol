@@ -106,6 +106,7 @@ abstract contract MarketFeeUpgradeable is
         emit auctionFeeDistributed(metaFee, royaltiesRecipientAddress, royalties, tokenOwner, ownerFee);
     }
 
+    // the marketfee update function is only able to be called by admin.
     function _updateMarketFee(
         uint256 primaryBasisShare_,
         uint256 secondBasisShare_,
@@ -170,6 +171,9 @@ abstract contract MarketFeeUpgradeable is
         owenrFee = price - metaFee - royalties;
     }
 
+    // cause assistant have the authority to mint NFT for creator that the first owner of NFT is different.
+    // therefore judging first-sale needs two conditions that 'firstSaleCompleted[nftContract][tokenId]' is false,
+    // and seller is creator or assistant.
     function _getIsPrimary(address nftContract, uint256 tokenId, address seller) private view returns (bool) {
         address creator = IMetaArt(nftContract).getTokenIdCreator(tokenId);
         address assistant = IMetaArt(nftContract).getCreatorAssistant(creator);
