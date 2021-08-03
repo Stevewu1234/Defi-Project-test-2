@@ -21,7 +21,7 @@ interface ISystemStatus {
     // status of key functions of each system section
     // function voterecordingActive() external view;
 
-    function requireFunctionActive(bytes32 functionname, bytes32 section) external view;
+    function requireFunctionActive(bytes32 functionname, bytes32 section) external view returns (bool);
 
 
     // whether tbe system is upgrading or not
