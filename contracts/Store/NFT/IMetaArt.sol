@@ -1,3 +1,6 @@
+pragma solidity ^0.8.0;
+
+
 interface IMetaArt {
     
     function getTokenIdCreator(uint256 tokenId) external view returns (address payable);
