@@ -1,7 +1,4 @@
-# notice: the version of contract may be used just for experiment 
-# notice: only used for experiment. Do not copy for your project
-
-System name:
+# notice: the version of contract may be used just for experiment
 
 System: 0x53797374656d0000000000000000000000000000000000000000000000000000
 
