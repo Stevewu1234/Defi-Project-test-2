@@ -1,4 +1,5 @@
-##notice: the version of contract may be used just for experiment 
+# notice: the version of contract may be used just for experiment 
+# notice: only used for experiment. Do not copy for your project
 
 System name:
 
